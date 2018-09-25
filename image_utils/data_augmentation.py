@@ -2,23 +2,35 @@ import numpy as np
 import random
 
 
-def jitter(img, tau=5):
+def crop(img, crop_size=(224, 224), tau=5):
     """
     The received image has format (C, H, W)
 
-    :param img: expected as a np array
+    :param img: expected as a torch array
     :param tau: maximum authorised translation
     :return:
     """
-    C, H, W = img.shape
+    if len(img.shape) == 3:
+        C, H, W = img.shape
+    else:
+        raise Exception
 
-    tau_x = random.randint(0, 2 * tau)
-    tau_y = random.randint(0, 2 * tau)
+    tau_x = random.randint(0, W - crop_size[1])
+    tau_y = random.randint(0, H - crop_size[1])
 
-    padded = np.zeros((C, H + 2 * tau, W + 2 * tau))
-    padded[:, tau_y:tau_y + H, tau_x:tau_x + W] = img
+    def correct_to_dim(c1, c2, min_, max_):
+        if c1 < min_:
+            c2 += (min_ - c1)
+            c1 = min_
+        if c2 > max_:
+            c1 -= (c2 - max_)
+            c2 = max_
+        return c1, c2
 
-    return padded[:, tau:-tau, tau:-tau]
+    x1, x2 = correct_to_dim(tau_x, tau_x + crop_size[1], 0, W)
+    y1, y2 = correct_to_dim(tau_y, tau_y + crop_size[0], 0, H)
+
+    return img[:, y1: y2, x1: x2 ]
 
 
 

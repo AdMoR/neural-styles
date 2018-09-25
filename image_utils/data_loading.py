@@ -22,3 +22,4 @@ def apply_mean_and_std(img, mean, std):
     mean = torch.tensor(mean).view(-1, 1, 1)
     std = torch.tensor(std).view(-1, 1, 1)
     return (img - mean) / std
+
