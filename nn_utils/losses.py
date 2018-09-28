@@ -27,21 +27,38 @@ class ImageNorm(nn.Module):
                 torch.norm(tensor[tensor < 0], 2)
 
 
-class NeuronExcitationLoss(nn.Module):
+class CenteredNeuronExcitationLoss(nn.Module):
 
     def __init__(self, neuron_index, *args, **kwargs):
-        super(NeuronExcitationLoss, self).__init__()
+        super(CenteredNeuronExcitationLoss, self).__init__()
         self.neuron_index = neuron_index
 
     def forward(self, layer):
         # We need a 4D tensor
         assert(len(layer.shape) == 4)
-        batch = layer.shape[0]
+        batch, C, H, W = layer.shape
 
         # Flatten the activation map
-        noise_activation = layer.view((batch, -1))
+        noise_activation = layer[:, self.neuron_index, int(H / 2), int(W / 2)]
         # We return the sum over the batch of neuron number index activation values as a loss
-        return -torch.sum(noise_activation[:, self.neuron_index] ** 2)
+        return -torch.sum(noise_activation)
+
+
+class LayerExcitationLoss(nn.Module):
+
+    def __init__(self, neuron_index, *args, **kwargs):
+        super(CenteredNeuronExcitationLoss, self).__init__()
+        self.neuron_index = neuron_index
+
+    def forward(self, layer):
+        # We need a 4D tensor
+        assert(len(layer.shape) == 4)
+        batch, C, H, W = layer.shape
+
+        # Flatten the activation map
+        noise_activation = layer[:, self.neuron_index, :, :]
+        # We return the sum over the batch of neuron number index activation values as a loss
+        return -torch.sum(torch.abs(noise_activation))
 
 
 class ExtremeSpikeLayerLoss(nn.Module):
