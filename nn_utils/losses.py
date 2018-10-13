@@ -44,10 +44,10 @@ class CenteredNeuronExcitationLoss(nn.Module):
         return -torch.sum(noise_activation)
 
 
-class LayerExcitationLoss(nn.Module):
+class DeepDreamLoss(nn.Module):
 
     def __init__(self, neuron_index, *args, **kwargs):
-        super(CenteredNeuronExcitationLoss, self).__init__()
+        super(DeepDreamLoss, self).__init__()
         self.neuron_index = neuron_index
 
     def forward(self, layer):
@@ -58,7 +58,23 @@ class LayerExcitationLoss(nn.Module):
         # Flatten the activation map
         noise_activation = layer[:, self.neuron_index, :, :]
         # We return the sum over the batch of neuron number index activation values as a loss
-        return -torch.sum(torch.abs(noise_activation))
+        return -torch.sum(noise_activation ** 2)
+
+
+class LayerExcitationLoss(nn.Module):
+
+    def __init__(self, neuron_index, *args, **kwargs):
+        super(LayerExcitationLoss, self).__init__()
+        self.neuron_index = neuron_index
+
+    def forward(self, layer):
+        # We need a 4D tensor
+        assert(len(layer.shape) == 4)
+
+        # Flatten the activation map
+        noise_activation = layer[:, self.neuron_index, :, :]
+        # We return the sum over the batch of neuron number index activation values as a loss
+        return -torch.mean(noise_activation)
 
 
 class ExtremeSpikeLayerLoss(nn.Module):

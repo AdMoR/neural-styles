@@ -1,0 +1,19 @@
+TODO :
+
+- Make alexnet work on logit value --> mismatch on size
+- Have functional regularization --> gaussian blur, bilateral filtering
+- verify : jitter and crop
+
+- Add proper layer naming retrieval
+
+
+Transformation : 
+
+Images were optimized for 2560 steps in a color-decorrelated fourier-transformed space, using Adam at a learning rate of 0.05. We used each of following transformations in the given order at each step of the optimization:
+
+• Padding the input by 16 pixels to avoid edge artifacts
+• Jittering by up to 16 pixels
+• Scaling by a factor randomly selected from this list: 1, 0.975, 1.025, 0.95, 1.05
+• Rotating by an angle randomly selected from this list; in degrees: -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5
+• Jittering a second time by up to 8 pixels
+• Cropping the padding
