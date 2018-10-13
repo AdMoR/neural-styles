@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import random
 
 
@@ -33,5 +34,11 @@ def crop(img, crop_size=(224, 224), tau=5):
     return img[:, y1: y2, x1: x2 ]
 
 
-
+def jitter(img, tau=8):
+    C, H, W = img.shape
+    tau_x = random.randint(0, 2 * tau)
+    tau_y = random.randint(0, 2 * tau)
+    padded = torch.zeros((C, H + 2 * tau, W + 2 * tau))
+    padded[:, tau_y:tau_y + H, tau_x:tau_x + W] = img
+    return padded[:, tau:-tau, tau:-tau]
 
