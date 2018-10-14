@@ -3,7 +3,7 @@ import torch
 import random
 
 
-def crop(img, crop_size=(224, 224), tau=5):
+def crop(img, crop_size=(224, 224)):
     """
     The received image has format (C, H, W)
 
