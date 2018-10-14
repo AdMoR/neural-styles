@@ -1,5 +1,6 @@
 import torch
 from scipy.ndimage import gaussian_filter
+from scipy.ndimage.filters import median_filter
 
 from image_utils.data_augmentation import crop, jitter
 from image_utils.vgg_normalizer import Normalization
@@ -13,7 +14,7 @@ class NeuronExciter(torch.nn.Module):
 
     def __init__(self, layer_index=1, channel_index=6, loss_type=LayerExcitationLoss):
         super(NeuronExciter, self).__init__()
-        self.model_name, self.feature_layer = prepare_model.load_inception_v3(layer_index)
+        self.model_name, self.feature_layer = prepare_model.load_alexnet(layer_index)
 
         self.image_loss = ImageNorm()
         self.tot_var = TVLoss()
@@ -32,24 +33,24 @@ class NeuronExciter(torch.nn.Module):
 
         return loss + regularization
 
-def optimize_image(layer_index=1, channel_index=6):
-    noise = torch.randn((1, 3, 224, 224), requires_grad=True)
+def optimize_image(layer_index=1, channel_index=6, n_steps=2048):
+    noise = torch.randn((1, 3, 500, 500), requires_grad=True)
     #optim = torch.optim.LBFGS([noise.requires_grad_()])
     optim = torch.optim.Adam([noise.requires_grad_()], lr=0.05)
-    sigma = 15
+    sigma = 3
     loss_estimator = NeuronExciter(layer_index, channel_index)
 
     def closure():
         optim.zero_grad()
-        jittered_batch = torch.stack([jitter(noise.squeeze()) for _ in range(8)])
+        jittered_batch = torch.stack([crop(noise.squeeze()) for _ in range(64)])
+        #jittered_batch = torch.stack([jitter(noise.squeeze()) for _ in range(8)])
         loss = loss_estimator.forward(jittered_batch)
         loss.backward()
         return loss
 
-    n_steps = 2048
     for i in range(n_steps):
         optim.step(closure)
-        noise.numpy = gaussian_filter(noise.numpy, sigma=sigma)
+        noise.numpy = median_filter(noise.numpy, size=sigma)
     save_image("./images/{loss}_{model}_{channel}_{step}_{tv}.jpg".
                        format(model=loss_estimator.model_name,
                               loss=loss_estimator.loss._get_name(),
@@ -60,7 +61,7 @@ def optimize_image(layer_index=1, channel_index=6):
 
 
 if __name__ == "__main__":
-    for i in range(10, 20):
-        optimize_image(layer_index=10, channel_index=i)
-        print("Finished on layer {}".format(i))
+    for i in range(54, 55):
+        optimize_image(channel_index=i, n_steps=2 * 4096)
+        print("Finished on channel {}".format(i))
 
