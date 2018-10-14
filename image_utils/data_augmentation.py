@@ -42,3 +42,8 @@ def jitter(img, tau=8):
     padded[:, tau_y:tau_y + H, tau_x:tau_x + W] = img
     return padded[:, tau:-tau, tau:-tau]
 
+
+def build_subsampler(subsample=2):
+    mean_pool = torch.nn.AdaptiveAvgPool2d((subsample, subsample))
+    return mean_pool
+
