@@ -17,3 +17,8 @@ Images were optimized for 2560 steps in a color-decorrelated fourier-transformed
 • Rotating by an angle randomly selected from this list; in degrees: -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5
 • Jittering a second time by up to 8 pixels
 • Cropping the padding
+
+
+Notes : 
+jitter too large --> unstable training and get a black image back
+
