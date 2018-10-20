@@ -1,4 +1,5 @@
 import numpy as np
+import torch.nn.functional as F
 import torch
 import random
 
@@ -17,7 +18,7 @@ def crop(img, crop_size=(224, 224)):
         raise Exception
 
     tau_x = random.randint(0, W - crop_size[1])
-    tau_y = random.randint(0, H - crop_size[1])
+    tau_y = random.randint(0, H - crop_size[0])
 
     def correct_to_dim(c1, c2, min_, max_):
         if c1 < min_:
@@ -42,8 +43,39 @@ def jitter(img, tau=8):
     padded[:, tau_y:tau_y + H, tau_x:tau_x + W] = img
     return padded[:, tau:-tau, tau:-tau]
 
-
 def build_subsampler(subsample=2):
     mean_pool = torch.nn.AdaptiveAvgPool2d((subsample, subsample))
     return mean_pool
+
+
+def image_scaling(img, subsample=None):
+
+    if subsample is None:
+        subsample = random.choice([0.9, 0.95, 1, 1.05, 1.1])
+    if subsample == 1:
+        return img
+
+    N, C, H, W = img.shape
+    target_shape = (int(subsample * H), int(subsample * W))
+
+    grid = torch.zeros((N,) + target_shape + (2,))
+    out = torch.zeros(img.shape)
+
+    for n in range(N):
+        for y in range(target_shape[0]):
+            for x in range(target_shape[1]):
+                grid[n, y, x, 0] = (y - H / 2) / H
+                grid[n, y, x, 1] = (x - W / 2) / W
+
+    scaled = F.grid_sample(img, grid)
+    origin = (abs(int(0.5 * (H - target_shape[0]))), abs(int(0.5 * (W - target_shape[1]))))
+
+    if subsample < 1.0:
+        target = (origin[0] + target_shape[0], origin[1] + target_shape[1])
+        out[:, :, origin[0]:target[0], origin[1]:target[1]] = scaled
+        return out
+    else:
+        target = (origin[0] + H, origin[1] + W)
+        return scaled[:, :, origin[0]:target[0], origin[1]:target[1]]
+
 
