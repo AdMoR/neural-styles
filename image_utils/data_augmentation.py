@@ -3,6 +3,31 @@ import torch.nn.functional as F
 import torch
 import random
 
+def _rfft2d_freqs(h, w):
+  """Compute 2d spectrum frequences."""
+  fy = np.fft.fftfreq(h)[:, None]
+  # when we have an odd input dimension we need to keep one additional
+  # frequency and later cut off 1 pixel
+  if w % 2 == 1:
+    fx = np.fft.fftfreq(w)[:w//2+2]
+  else:
+    fx = np.fft.fftfreq(w)[:w//2+1]
+  return np.sqrt(fx*fx + fy*fy)
+
+
+def build_freq_img(h, w, ch=3, sd=None, decay_power=1):
+    freqs = _rfft2d_freqs(h, w)
+    fh, fw = freqs.shape
+    sd = sd or 0.01
+    init_val = sd*np.random.randn(ch, fh, fw, 2).astype("float32")
+    spectrum_var = torch.autograd.Variable(torch.tensor(init_val, requires_grad=True))
+    
+    spectrum_scale = 1.0 / np.maximum(freqs, 1.0/max(h, w))**decay_power
+    spectrum_scale *= np.sqrt(w*h)
+
+    img = torch.irfft(spectrum_var, 2)
+    img = img[:ch, :h, :w]
+    return img
 
 def crop(img, crop_size=(224, 224)):
     """
