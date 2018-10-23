@@ -14,7 +14,7 @@ class NeuronExciter(torch.nn.Module):
 
     def __init__(self, layer_index=1, channel_index=6, loss_type=LayerExcitationLoss):
         super(NeuronExciter, self).__init__()
-        self.model_name, self.feature_layer = prepare_model.load_alexnet(layer_index)
+        self.model_name, self.feature_layer = prepare_model.load_resnet_18(layer_index)
         self.subsampler = build_subsampler(224)
 
         self.image_loss = ImageNorm()
@@ -36,7 +36,7 @@ class NeuronExciter(torch.nn.Module):
 
         return loss + regularization
 
-def optimize_image(layer_index=1, channel_index=6, n_steps=2048, image_size=224, lr=0.05):
+def optimize_image(layer_index=-1, channel_index=6, n_steps=2048, image_size=224, lr=0.05):
     noise = build_freq_img(image_size, image_size)
     #optim = torch.optim.LBFGS([noise.requires_grad_()])
     optim = torch.optim.Adam([noise.requires_grad_()], lr=lr)
@@ -48,7 +48,7 @@ def optimize_image(layer_index=1, channel_index=6, n_steps=2048, image_size=224,
         
         jittered_batch = torch.stack(
             [jitter(noise.squeeze(), tau=8) 
-             for _ in range(8)]
+             for _ in range(16)]
         )
         #jittered_batch = image_scaling(jittered_batch, 1)
         loss = loss_estimator.forward(jittered_batch)
@@ -70,7 +70,7 @@ def optimize_image(layer_index=1, channel_index=6, n_steps=2048, image_size=224,
 
 
 if __name__ == "__main__":
-    for i in range(0, 10):
+    for i in range(4, 10):
         optimize_image(channel_index=i, n_steps=2048, lr=0.1)
         print("Finished on channel {}".format(i))
 
