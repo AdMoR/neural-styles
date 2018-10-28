@@ -4,6 +4,12 @@ import torch
 import torchvision
 
 
+def save_optim(noise, model, loss, channel, tv, lr, step):
+    save_image("./images/{loss}_{model}_{channel}_{step}_{lr}_{tv}.jpg".\
+        format(loss=loss, model=model, channel=channel, step=step, lr=lr, tv=tv), 
+    noise)
+
+
 def load_image(path, size=None):
     img = io.imread(path)
     if size is not None:
