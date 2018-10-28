@@ -21,8 +21,8 @@ def relu_6_builder(x, step):
     pass_low = x < 0
     def relu_6_pass(grad):
         if step < 100:
-            print("special relu")
-            mask = ((grad < 0) * pass_high + (grad > 0) * pass_low)
+            #print("special relu")
+            mask = ((grad > 0) * pass_high + (grad < 0) * pass_low)
         else:
             mask = pass_low
         grad.masked_fill_(mask, 0)
@@ -36,7 +36,7 @@ class VisuRelu6(nn.Module):
         super(VisuRelu6, self).__init__(*args, **kwargs)
         self.step = 0
 
-    def forward(self, inputs):
+    def forward(self, inputs, **kwargs):
         self.step += 1
         val = F.relu(inputs)
         if val.requires_grad:

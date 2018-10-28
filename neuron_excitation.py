@@ -14,7 +14,7 @@ class NeuronExciter(torch.nn.Module):
 
     def __init__(self, layer_index=1, channel_index=6, loss_type=LayerExcitationLoss):
         super(NeuronExciter, self).__init__()
-        self.model_name, self.subsampler, self.feature_layer = prepare_model.load_vgg_16(layer_index)
+        self.model_name, self.subsampler, self.feature_layer = prepare_model.load_vgg_19(layer_index)
 
         self.image_loss = ImageNorm()
         self.tot_var = TVLoss()
@@ -63,13 +63,14 @@ def optimize_image(layer_index=10, channel_index=6, n_steps=2048, image_size=500
         #noise.numpy = gaussian_filter(noise.numpy, sigma=sigma)
 
        
-        if debug and i%100==1:
+        if False and i%100==1:
+            print(i)
             save_optim(noise, model=loss_estimator.model_name,
 		       loss=loss_estimator.loss._get_name(),
 		       channel=loss_estimator.loss.neuron_index,
 		       tv=loss_estimator.lambda_tv,
 		       lr=lr,
-		       step=n_steps)
+		       step=i)
     save_optim(noise, model=loss_estimator.model_name,
 	loss=loss_estimator.loss._get_name(),
 	channel=loss_estimator.loss.neuron_index,
@@ -79,6 +80,6 @@ def optimize_image(layer_index=10, channel_index=6, n_steps=2048, image_size=500
 
 if __name__ == "__main__":
     for i in range(15, 30):
-        optimize_image(channel_index=i, n_steps=2048, lr=0.05)
+        optimize_image(channel_index=i, n_steps=1024, lr=0.05)
         print("Finished on channel {}".format(i))
 
