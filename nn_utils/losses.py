@@ -68,11 +68,11 @@ class LayerExcitationLoss(nn.Module):
         self.neuron_index = neuron_index
 
     def forward(self, layer):
-        # We need a 4D tensor
-        assert(len(layer.shape) == 4)
-
         # Flatten the activation map
-        noise_activation = layer[:, self.neuron_index, :, :]
+        if len(layer.shape) == 4:
+            noise_activation = layer[:, self.neuron_index, :, :]
+        else:
+            noise_activation = layer[:, self.neuron_index]
         # We return the sum over the batch of neuron number index activation values as a loss
         return -torch.mean(noise_activation)
 
