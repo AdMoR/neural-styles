@@ -14,13 +14,13 @@ class NeuronExciter(torch.nn.Module):
 
     def __init__(self, layer_index=1, channel_index=6, loss_type=LayerExcitationLoss):
         super(NeuronExciter, self).__init__()
-        self.model_name, self.subsampler, self.feature_layer = prepare_model.load_vgg_19(layer_index)
+        self.model_name, self.subsampler, self.feature_layer = prepare_model.load_inception_v3(layer_index)
 
         self.image_loss = ImageNorm()
         self.tot_var = TVLoss()
         self.loss = loss_type(channel_index)
 
-        self.lambda_tv = 0.0005
+        self.lambda_tv = 0.0000
         self.lambda_norm = 10
 
     def forward(self, noise_image):
@@ -38,7 +38,8 @@ class NeuronExciter(torch.nn.Module):
         return loss + regularization
 
 def optimize_image(layer_index=10, channel_index=6, n_steps=2048, image_size=500, lr=0.05, debug=False):
-    noise = build_freq_img(image_size, image_size)
+    #noise = build_freq_img(image_size, image_size)
+    noise = torch.randn((1, 3, image_size, image_size), requires_grad=True)
     #optim = torch.optim.LBFGS([noise.requires_grad_()])
     optim = torch.optim.Adam([noise.requires_grad_()], lr=lr)
     sigma = 1
@@ -80,6 +81,6 @@ def optimize_image(layer_index=10, channel_index=6, n_steps=2048, image_size=500
 
 if __name__ == "__main__":
     for i in range(15, 30):
-        optimize_image(channel_index=i, n_steps=1024, lr=0.05)
+        optimize_image(channel_index=i, n_steps=1024, lr=0.1)
         print("Finished on channel {}".format(i))
 
