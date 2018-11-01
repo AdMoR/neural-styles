@@ -25,7 +25,8 @@ Some result on channel excitation on AlexNet : `L[:, c, :, :]`
 On VGG16 : 
 
 ![Example chanel excitation4](images/LayerExcitationLoss_vgg16_-1_4_2048_0.1_0.0005.jpg)
-![Example chanel excitation5](images/LayerExcitationLoss_vgg16_-1_6_2048_0.1_0.0005.jpg)
+![Example chanel excitation5](images/LayerExcitationLoss_vgg16_-1_12_2048_0.1_0.0005.jpg)
+![Example chanel excitation5](images/LayerExcitationLoss_vgg16_-1_10_2048_0.1_0.0005.jpg)
 
 On VGG19 : 
 
