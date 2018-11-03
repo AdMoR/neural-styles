@@ -17,7 +17,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         self.losses = losses
         self.transforms = transforms
 
-        self.lambda_tv = 0.0015
+        self.lambda_tv = 0.001
         self.lambda_norm = 10
 
     def forward(self, noise_image, debug=False):
@@ -55,7 +55,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
             return loss
 
         for i in range(n_steps):
-            if i % n_steps / 10 == 0:
+            if i % int(n_steps / 10) == 0:
                 debug = True
             else:
                 debug = False
