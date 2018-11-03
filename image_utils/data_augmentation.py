@@ -61,12 +61,12 @@ def crop(img, crop_size=(224, 224)):
 
 
 def jitter(img, tau=8):
-    C, H, W = img.shape
+    B, C, H, W = img.shape
     tau_x = random.randint(0, 2 * tau)
     tau_y = random.randint(0, 2 * tau)
-    padded = torch.zeros((C, H + 2 * tau, W + 2 * tau))
-    padded[:, tau_y:tau_y + H, tau_x:tau_x + W] = img
-    return padded[:, tau:-tau, tau:-tau]
+    padded = torch.nn.ReflectionPad2d(tau)(img)
+    return padded[:, :, tau_x:H, tau_y:W]
+
 
 def build_subsampler(subsample=2):
     mean_pool = torch.nn.AdaptiveAvgPool2d((subsample, subsample))
