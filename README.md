@@ -16,7 +16,9 @@ You can now run the script
 
 
 ## :gem: Some results :gem:
-Some result on channel excitation on AlexNet : `L[:, c, :, :]`
+Some result on channel excitation `L[:, c, :, :]`: 
+
+On AlexNet : 
 
 ![Example chanel excitation](/images/LayerExcitationLoss_alexnet_1_34_2048_0.0005.jpg)
 ![Example chanel excitation 2](/images/LayerExcitationLoss_alexnet_1_18_2048_0.0005.jpg)
