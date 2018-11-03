@@ -45,8 +45,9 @@ class ParametrizedImageVisualizer(torch.nn.Module):
             optim.zero_grad()
 
             jittered_batch = torch.stack(
-                 [compose(self.transforms)(noise)
-                  for _ in range(16)]
+                [compose(self.transforms)(noise)
+                 for _ in range(16)],
+                axis=0
             )
             # jittered_batch = image_scaling(jittered_batch, 1)
             loss = self.forward(jittered_batch, debug)
