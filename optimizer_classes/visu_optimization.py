@@ -25,7 +25,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         if noise_image.shape[-1] != 224:
             noise_image = self.subsampler(noise_image)
         feature = self.feature_layer.forward(noise_image)
-        loss = torch.sum([loss(feature) for loss in self.losses])
+        loss = sum([loss(feature) for loss in self.losses])
 
         regularization = self.lambda_tv * self.tot_var(noise_image) + \
             self.lambda_norm * self.image_loss(noise_image)
@@ -38,17 +38,17 @@ class ParametrizedImageVisualizer(torch.nn.Module):
     def run(self, noise, lr, n_steps):
         def compose(*functions):
             return functools.reduce(lambda f, g: lambda x: f(g(x)), functions, lambda x: x)
+        tf_pipeline = compose(*self.transforms)
         optim = torch.optim.Adam([noise.requires_grad_()], lr=lr)
         debug = False
 
         def closure():
             optim.zero_grad()
-
+            jitters = [tf_pipeline(noise) for _ in range(16)]
             jittered_batch = torch.stack(
-                [compose(self.transforms)(noise)
-                 for _ in range(16)],
-                axis=0
-            )
+                jitters,
+                dim=1
+            ).squeeze(0)
             # jittered_batch = image_scaling(jittered_batch, 1)
             loss = self.forward(jittered_batch, debug)
             loss.backward()
