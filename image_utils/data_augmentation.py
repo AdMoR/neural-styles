@@ -26,7 +26,7 @@ def build_freq_img(h, w, ch=3, sd=None, decay_power=1):
     spectrum_scale *= np.sqrt(w*h)
 
     img = torch.irfft(spectrum_var, 2)
-    img = img[:ch, :h, :w]
+    img = img[:ch, :h, :w].unsqueeze(0)
     return img
 
 def crop(img, crop_size=(224, 224)):
@@ -60,12 +60,12 @@ def crop(img, crop_size=(224, 224)):
     return img[:, y1: y2, x1: x2 ]
 
 
-def jitter(img, tau=8):
+def jitter(tau, img):
     B, C, H, W = img.shape
-    tau_x = random.randint(0, 2 * tau)
-    tau_y = random.randint(0, 2 * tau)
-    padded = torch.nn.ReflectionPad2d(tau)(img)
-    return padded[:, :, tau_x:H, tau_y:W]
+    tau_x = random.randint(tau, 2 * tau)
+    tau_y = random.randint(tau, 2 * tau)
+    padded = torch.nn.ReflectionPad2d(tau + 1)(img)
+    return padded[:, :, tau_x:tau_x + H, tau_y: tau_y + W]
 
 
 def build_subsampler(subsample=2):

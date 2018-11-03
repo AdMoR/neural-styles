@@ -21,9 +21,9 @@ def run_optim(image_size=500, layer_index=33, lr=0.1, n_steps=2048):
     noise = build_freq_img(image_size, image_size)
     opt.run(noise, lr=lr, n_steps=n_steps)
 
-    save_optim(noise, model=opt.model_name,
-               loss=opt.loss._get_name(),
-               channel=opt.loss.neuron_index,
+    save_optim(noise=noise, 
+               model=opt.model_name,
+               loss="+".join([l.name for l in opt.losses]),
                tv=opt.lambda_tv,
                lr=lr,
                step=n_steps)

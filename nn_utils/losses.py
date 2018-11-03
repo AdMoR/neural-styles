@@ -67,6 +67,10 @@ class LayerExcitationLoss(nn.Module):
         super(LayerExcitationLoss, self).__init__()
         self.neuron_index = neuron_index
 
+    @property
+    def name(self):
+        return self.__class__.__name__ + str(self.neuron_index)
+
     def forward(self, layer):
         # Flatten the activation map
         if len(layer.shape) == 4:
