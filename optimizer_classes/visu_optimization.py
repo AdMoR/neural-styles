@@ -1,6 +1,7 @@
 import functools
 
 import torch
+from tensorboardX import SummaryWriter
 
 from nn_utils.losses import TVLoss, ImageNorm, LayerExcitationLoss
 from nn_utils import prepare_model
@@ -42,21 +43,29 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         optim = torch.optim.Adam([noise.requires_grad_()], lr=lr)
         debug = False
 
-        def closure():
-            optim.zero_grad()
-            jitters = [tf_pipeline(noise) for _ in range(16)]
-            jittered_batch = torch.stack(
-                jitters,
-                dim=1
-            ).squeeze(0)
-            # jittered_batch = image_scaling(jittered_batch, 1)
-            loss = self.forward(jittered_batch, debug)
-            loss.backward()
-            return loss
+        def logging_step(writer):
+            def closure():
+                optim.zero_grad()
+                jitters = [tf_pipeline(noise) for _ in range(16)]
+                jittered_batch = torch.stack(
+                    jitters,
+                    dim=1
+                ).squeeze(0)
+                # jittered_batch = image_scaling(jittered_batch, 1)
+                loss = self.forward(jittered_batch, debug)
+                writer.add_scalars("data/" + self.model_name + "_loss_" + self.losses[0].name, {"loss": loss}, i)
+                loss.backward()
+                return loss
+            return closure
 
-        for i in range(n_steps):
-            if i % int(n_steps / 10) == 0:
-                debug = True
-            else:
-                debug = False
-            optim.step(closure)
+        with SummaryWriter(log_dir="./logs", comment=self.model_name) as writer:
+            closure = logging_step(writer)
+
+            for i in range(n_steps):
+                if i % int(n_steps / 10) == 0:
+                    debug = True
+                else:
+                    debug = False
+                loss = optim.step(closure)
+
+            
