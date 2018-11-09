@@ -42,5 +42,5 @@ def load_vgg_19(layer_index):
     print(">>>>>>>>>")
     replace_relu_with_leaky(modules, ramp=0.1)
     print(modules)
-    return "vgg19_{}".format(layer_index), build_subsampler(224), nn_model
+    return "vgg19_{}".format(layer_index), build_subsampler(224), nn_model[0]
 

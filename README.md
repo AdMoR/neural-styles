@@ -14,6 +14,10 @@ Install the requirements
 You can now run the script
 `python3 neuron_excitation.py`
 
+In another tab, you can run
+`sudo docker run -d -p 6006:6006 -v $(pwd)/logs:/logs --name my-tf-tensorboard volnet/tensorflow-tensorboard`
+It will allow you to visualize the loss of the current training in a tensorboard tab. Open `http://localhost:6006/#scalars` to get the visualization
+
 
 ## :gem: Some results :gem:
 Some result on channel excitation `L[:, c, :, :]`: 
