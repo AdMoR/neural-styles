@@ -9,7 +9,7 @@ from nn_utils import prepare_model
 
 class ParametrizedImageVisualizer(torch.nn.Module):
 
-    def __init__(self, model, losses, transforms=[]):
+    def __init__(self, model, losses, transforms=[], batch_size=6):
         super(ParametrizedImageVisualizer, self).__init__()
         self.model_name, self.subsampler, self.feature_layer = model
 
@@ -20,6 +20,11 @@ class ParametrizedImageVisualizer(torch.nn.Module):
 
         self.lambda_tv = 0.001
         self.lambda_norm = 10
+        self.batch_size = batch_size
+
+    @property
+    def name(self):
+        return ":".join([self.model_name, "+".join([loss.name for loss in self.losses]), str(self.batch_size), str(self.lambda_tv), str(self.lambda_norm)])
 
     def forward(self, noise_image, debug=False):
         # Get the right layer features
@@ -46,7 +51,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         def logging_step(writer):
             def closure():
                 optim.zero_grad()
-                jitters = [tf_pipeline(noise) for _ in range(16)]
+                jitters = [tf_pipeline(noise) for _ in range(self.batch_size)]
                 jittered_batch = torch.stack(
                     jitters,
                     dim=1
@@ -58,7 +63,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
                 return loss
             return closure
 
-        with SummaryWriter(log_dir="./logs", comment=self.model_name) as writer:
+        with SummaryWriter(log_dir="./logs", comment=self.name) as writer:
             closure = logging_step(writer)
 
             for i in range(n_steps):

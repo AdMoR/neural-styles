@@ -9,6 +9,9 @@ def save_optim(noise, model, loss, tv, lr, step):
         format(loss=loss, model=model, step=step, lr=lr, tv=tv), 
     noise)
 
+def simple_save(img, name):
+    save_image("./images/{}.jpg".format(name), img)
+
 
 def load_image(path, size=None):
     img = io.imread(path)
