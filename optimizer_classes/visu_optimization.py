@@ -1,6 +1,7 @@
 import functools
 
 import torch
+import torchvision.utils as vutils
 from tensorboardX import SummaryWriter
 
 from nn_utils.losses import TVLoss, ImageNorm, LayerExcitationLoss
@@ -9,7 +10,7 @@ from nn_utils import prepare_model
 
 class ParametrizedImageVisualizer(torch.nn.Module):
 
-    def __init__(self, model, losses, transforms=[], batch_size=6):
+    def __init__(self, model, losses, transforms=[], batch_size=4):
         super(ParametrizedImageVisualizer, self).__init__()
         self.model_name, self.subsampler, self.feature_layer = model
 
@@ -18,13 +19,14 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         self.losses = losses
         self.transforms = transforms
 
-        self.lambda_tv = 0.001
+        self.init_tv = 0.001
+        self.lambda_tv = self.init_tv
         self.lambda_norm = 10
         self.batch_size = batch_size
 
     @property
     def name(self):
-        return ":".join([self.model_name, "+".join([loss.name for loss in self.losses]), str(self.batch_size), str(self.lambda_tv), str(self.lambda_norm)])
+        return ":".join([self.model_name, "+".join([loss.name for loss in self.losses]), str(self.batch_size), str(self.init_tv), str(self.lambda_norm)])
 
     def forward(self, noise_image, debug=False):
         # Get the right layer features
@@ -58,7 +60,10 @@ class ParametrizedImageVisualizer(torch.nn.Module):
                 ).squeeze(0)
                 # jittered_batch = image_scaling(jittered_batch, 1)
                 loss = self.forward(jittered_batch, debug)
-                writer.add_scalars("data/" + self.model_name + "_loss_" + self.losses[0].name, {"loss": loss}, i)
+                writer.add_scalars("neuron_excitation/" + self.name, {"loss": loss, "tv": self.lambda_tv}, i)
+                if debug:
+                    viz = vutils.make_grid(noise)
+                    writer.add_image('visu/'+self.name, viz, i)
                 loss.backward()
                 return loss
             return closure
