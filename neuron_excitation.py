@@ -12,7 +12,7 @@ from optimizer_classes.visu_optimization import ParametrizedImageVisualizer
 torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 
-def run_optim(image_size=500, layer_index=33, lr=0.01, n_steps=2048):
+def run_optim(image_size=500, layer_index=33, lr=0.01, n_steps=2*2048):
     model = prepare_model.load_vgg_16(-1)
     losses = [LayerExcitationLoss(layer_index)]
     tfs = [partial(jitter, 8), scaled_rotation, partial(jitter, 16)]
