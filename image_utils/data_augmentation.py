@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import torch.nn.functional as F
 import torch
@@ -46,6 +48,37 @@ def jitter(tau, img):
 def build_subsampler(subsample=2):
     mean_pool = torch.nn.AdaptiveAvgPool2d((subsample, subsample))
     return mean_pool
+
+
+def scaled_rotation(x, in_theta=None, scale=None):
+
+    if in_theta is None:
+        in_theta = random.choice(list(range(-8, 9)))
+    rad_theta = math.pi / 360 * in_theta
+
+    if scale is None:
+        scale = random.choice([0.95, 0.975, 1, 1.025, 1.05])
+
+    theta = torch.zeros((1, 2, 3))
+    theta[0, 0, 0] = math.cos(rad_theta)
+    theta[0, 0, 1] = -math.sin(rad_theta)
+    theta[0, 1, 0] = math.sin(rad_theta)
+    theta[0, 1, 1] = math.cos(rad_theta)
+
+    grid = scale * F.affine_grid(theta, x.shape)
+    return F.grid_sample(x, grid)
+
+
+def scale(x, scale):
+
+    if scale is None:
+        scale = random.choice([0.95, 0.975, 1, 1.025, 1.05])
+
+    theta = torch.zeros((1, 2, 3))
+    theta[0, 0, 0] = 1
+    theta[0, 1, 1] = 1
+    grid = scale * F.affine_grid(theta, timg.size())
+    return F.grid_sample(x, grid)
 
 
 def image_scaling(img, subsample=None):
