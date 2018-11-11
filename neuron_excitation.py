@@ -17,16 +17,16 @@ def run_optim(image_size=500, layer_index=33, lr=0.01, n_steps=2*2048):
     losses = [LayerExcitationLoss(layer_index)]
     tfs = [partial(jitter, 8), scaled_rotation, partial(jitter, 16)]
 
-    opt = ParametrizedImageVisualizer(losses=losses, model=model, transforms=tfs)
+    opt = ParametrizedImageVisualizer(losses=losses, model=model, transforms=tfs, batch_size=16)
 
     noise = build_freq_img(image_size, image_size)
     opt.run(noise, lr=lr, n_steps=n_steps)
 
-    simple_save(noise, name=opt.name)
+    simple_save(noise, name=opt.name + ":" + str(n_steps))
 
 
 if __name__ == "__main__":
-    for i in range(50, 60):
-        run_optim(layer_index=i, n_steps=2048, lr=0.05)
+    for i in range(61, 100):
+        run_optim(layer_index=i, n_steps=2*2048, lr=0.05)
         print("Finished on channel {}".format(i))
 

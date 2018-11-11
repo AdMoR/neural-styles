@@ -9,11 +9,11 @@ class TVLoss(nn.Module):
         if len(tensor.size()) == 4:
             pixel_dif1 = tensor[:, :, 1:, :] - tensor[:, :, :-1, :]
             pixel_dif2 = tensor[:, :, :, 1:] - tensor[:, :, :, :-1]
-            tot_var = torch.sum(torch.abs(pixel_dif1)) + torch.sum(torch.abs(pixel_dif2))
+            tot_var = torch.mean(torch.abs(pixel_dif1)) + torch.mean(torch.abs(pixel_dif2))
         elif len(tensor.size()) == 3:
             pixel_dif1 = tensor[:, 1:, :] - tensor[:, :-1, :]
             pixel_dif2 = tensor[:, :, 1:] - tensor[:, :, :-1]
-            tot_var = torch.sum(torch.abs(pixel_dif1)) + torch.sum(torch.abs(pixel_dif2))
+            tot_var = torch.mean(torch.abs(pixel_dif1)) + torch.mean(torch.abs(pixel_dif2))
         else:
             raise Exception("Tot var tensor should be 3D or 4D")
 
