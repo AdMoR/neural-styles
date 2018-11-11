@@ -19,9 +19,9 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         self.losses = losses
         self.transforms = transforms
 
-        self.init_tv = 0.001
+        self.init_tv = 10
         self.lambda_tv = self.init_tv
-        self.lambda_norm = 10
+        self.lambda_norm = 100
         self.batch_size = batch_size
 
     @property
@@ -58,11 +58,11 @@ class ParametrizedImageVisualizer(torch.nn.Module):
                     jitters,
                     dim=1
                 ).squeeze(0)
-                # jittered_batch = image_scaling(jittered_batch, 1)
                 loss = self.forward(jittered_batch, debug)
-                writer.add_scalars("neuron_excitation/" + self.name, {"loss": loss, "tv": self.lambda_tv}, i)
+                writer.add_scalars("neuron_excitation/" + self.name, {"loss": loss}, i)
                 if debug:
                     viz = vutils.make_grid(noise)
+                    viz = torch.clamp(viz, 0, 0.999999)
                     writer.add_image('visu/'+self.name, viz, i)
                 loss.backward()
                 return loss
@@ -72,7 +72,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
             closure = logging_step(writer)
 
             for i in range(n_steps):
-                if i % int(n_steps / 10) == 0:
+                if i % int(n_steps / 10) == 0 or i == n_steps - 1:
                     debug = True
                 else:
                     debug = False

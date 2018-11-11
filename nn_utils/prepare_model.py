@@ -15,8 +15,8 @@ def load_alexnet(layer_index):
 
 def load_inception_v3(layer_index):
     from nn_utils.modified_inception import inception_v3, BasicConv2d
-    BasicConv2d.my_func = VisuRelu6()
-    nn_model = inception_v3(pretrained=True).eval()
+    BasicConv2d.my_func = nn.LeakyReLU(0.1)
+    nn_model = inception_v3(pretrained=True)
     nn_model.training = False
     return "inceptionv3_{}".format(layer_index), build_subsampler(299), nn_model
 
@@ -42,5 +42,5 @@ def load_vgg_19(layer_index):
     print(">>>>>>>>>")
     replace_relu_with_leaky(modules, ramp=0.1)
     print(modules)
-    return "vgg19_{}".format(layer_index), build_subsampler(224), nn_model[0]
+    return "vgg19_{}".format(layer_index), build_subsampler(224), modules[0]
 
