@@ -9,7 +9,13 @@ A neural network has a set of intermediate feature before the classification one
 
 `Objective(I) = -mean(Network_layer_score(I)) + regularization(I)`
 
-The neural network is differentiable and thus we can get a gradient to improve our image and get a lower objective.
+We use back-propagation to have an image that will gradually get a lower score.
+The neural network is differentiable and thus we can get a clean gradient to update our image.
+
+`I -= gradient_I(Objective(I))`
+
+Depending on the network, this gives more or less interesting pics.
+
 
 ### What does it look like ?
 
@@ -29,7 +35,11 @@ Last layer, different architecture
 ![VGG16 FC3 neuron 100](imgs/vgg16_0:LayerExcitationLoss100:4:0.0025:10:4096.jpg)
 
 
+As we can see, the networks generate totally different images. But we can recognize some things on last layer (close to the object prediction of ImageNet like frog).
+
+
 ### Difficulties
 
 The network "vision" is not perfect and is very sensitive to noise. We need to limit the presence of high frequency noise, but on the other hand this noise limitation may cause the input image to stay black.
 Several tricks must be used to make the task of the optimizer a little bit easier, the network itself should also be modified to be easier to back-propagate.
+
