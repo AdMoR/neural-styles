@@ -12,9 +12,9 @@ from optimizer_classes.visu_optimization import ParametrizedImageVisualizer
 torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 
-def run_optim(image_size=500, layer_index=33, lr=0.01, n_steps=4096):
+def run_optim(image_size=500, layer_index=33, lr=0.005, n_steps=4096):
     model = prepare_model.load_vgg_16(-1)
-    losses = [LayerExcitationLoss(layer_index)]
+    losses = [LayerExcitationLoss(layer_index, True)]
     tfs = [partial(jitter, 4), scaled_rotation, partial(jitter, 16)]
 
     opt = ParametrizedImageVisualizer(losses=losses, model=model, transforms=tfs, batch_size=4)
@@ -26,7 +26,7 @@ def run_optim(image_size=500, layer_index=33, lr=0.01, n_steps=4096):
 
 
 if __name__ == "__main__":
-    for i in range(61, 100):
-        run_optim(layer_index=i, n_steps=2*2048, lr=0.05)
+    for i in reversed(range(900, 1000)):
+        run_optim(layer_index=i, n_steps=1024, lr=0.05)
         print("Finished on channel {}".format(i))
 

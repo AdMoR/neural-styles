@@ -33,7 +33,10 @@ def load_vgg_16(layer_index):
     print(">>>>>>>>>", modules)
     replace_relu_with_leaky(modules, ramp=0.1)
     print(modules)
-    return "vgg16_{}".format(layer_index), build_subsampler(224), modules[0]
+    if layer_index==-1:
+        return "vgg16_{}".format("classes"), build_subsampler(224), nn_model
+    else:
+        return "vgg16_{}".format("features"), build_subsampler(224), modules[0]
 
 
 def load_vgg_19(layer_index):
