@@ -3,7 +3,7 @@ from functools import partial
 
 from image_utils.data_augmentation import jitter, build_freq_img
 from nn_utils import prepare_model
-from nn_utils.losses import LayerExcitationLoss
+from nn_utils.neuron_losses import LayerExcitationLoss
 from optimizer_classes.visu_optimization import ParametrizedImageVisualizer
 
 

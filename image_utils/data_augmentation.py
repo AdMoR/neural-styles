@@ -59,7 +59,12 @@ def scaled_rotation(x, in_theta=None, scale=None):
     if scale is None:
         scale = random.choice([0.95, 0.975, 1, 1.025, 1.05])
 
-    theta = torch.zeros((1, 2, 3))
+    if x.shape == 4:
+        B = x.shape[0]
+    else:
+        B = 1
+
+    theta = torch.zeros((B, 2, 3))
     theta[0, 0, 0] = math.cos(rad_theta)
     theta[0, 0, 1] = -math.sin(rad_theta)
     theta[0, 1, 0] = math.sin(rad_theta)
