@@ -4,8 +4,7 @@ import torch
 import torchvision.utils as vutils
 from tensorboardX import SummaryWriter
 
-from nn_utils.losses import TVLoss, ImageNorm, LayerExcitationLoss
-from nn_utils import prepare_model
+from nn_utils.regularization_losses import TVLoss, ImageNorm
 
 
 class ParametrizedImageVisualizer(torch.nn.Module):
@@ -44,26 +43,31 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         return loss + regularization
 
     def run(self, noise, lr, n_steps):
+        print(noise.shape)
         def compose(*functions):
             return functools.reduce(lambda f, g: lambda x: f(g(x)), functions, lambda x: x)
         tf_pipeline = compose(*self.transforms)
         optim = torch.optim.Adam([noise.requires_grad_()], lr=lr)
         debug = False
 
-        def logging_step(writer):
+        def logging_step(writer=None):
             def closure():
                 optim.zero_grad()
-                jitters = [tf_pipeline(noise) for _ in range(self.batch_size)]
-                jittered_batch = torch.stack(
+                B, C, H, W = noise.shape
+                jitters = [tf_pipeline(noise[b].unsqueeze(0))
+                           for _ in range(self.batch_size) for b in range(B)]
+                jittered_batch = torch.cat(
                     jitters,
-                    dim=1
-                ).squeeze(0)
+                    dim=0
+                )
                 loss = self.forward(jittered_batch, debug)
-                writer.add_scalars("neuron_excitation/" + self.name, {"loss": loss}, i)
+                if writer:
+                    writer.add_scalars("neuron_excitation/" + self.name, {"loss": loss}, i)
                 if debug:
                     viz = vutils.make_grid(noise)
                     viz = torch.clamp(viz, 0, 0.999999)
-                    writer.add_image('visu/'+self.name, viz, i)
+                    if writer:
+                        writer.add_image('visu/'+self.name, viz, i)
                 loss.backward()
                 return loss
             return closure

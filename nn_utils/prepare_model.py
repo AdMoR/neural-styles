@@ -4,13 +4,17 @@ from image_utils.data_augmentation import build_subsampler
 from nn_utils.relu_override import replace_relu_with_leaky, override_gradient_relu, delete_relu, VisuRelu6
 
 
+
 def load_alexnet(layer_index):
     global global_step
     nn_model = models.alexnet(pretrained=True).eval()
     modules = list(nn_model.children())
     replace_relu_with_leaky(modules[0], ramp=0.1)
     print(modules)
-    return "alexnet_{}".format(layer_index), build_subsampler(244), modules[0]
+    if layer_index == -1:
+        return "alexnet_{}".format("classes"), build_subsampler(224), nn_model
+    else:
+        return "alexnet_{}".format("features"), build_subsampler(224), modules[0]
 
 
 def load_inception_v3(layer_index):
