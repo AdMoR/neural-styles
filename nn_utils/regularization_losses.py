@@ -6,28 +6,34 @@ class TVLoss(nn.Module):
 
     def forward(self, tensor):
 
-        if len(tensor.size()) == 4:
+        if len(tensor.shape) == 4:
+            B = tensor.shape[0]
             pixel_dif1 = tensor[:, :, 1:, :] - tensor[:, :, :-1, :]
             pixel_dif2 = tensor[:, :, :, 1:] - tensor[:, :, :, :-1]
             tot_var = torch.sum(torch.abs(pixel_dif1)) + torch.sum(torch.abs(pixel_dif2))
-        elif len(tensor.size()) == 3:
+        elif len(tensor.shape) == 3:
+            B = 1
             pixel_dif1 = tensor[:, 1:, :] - tensor[:, :-1, :]
             pixel_dif2 = tensor[:, :, 1:] - tensor[:, :, :-1]
             tot_var = torch.sum(torch.abs(pixel_dif1)) + torch.sum(torch.abs(pixel_dif2))
         else:
             raise Exception("Tot var tensor should be 3D or 4D")
 
-        return tot_var
+        return tot_var / B
 
 
 class ImageNorm(nn.Module):
 
     def forward(self, tensor):
-        return  torch.norm(tensor[tensor > 1] - 1, 2) + \
-                torch.norm(tensor[tensor < 0], 2)
+        return (torch.norm(tensor[tensor > 1] - 1, 2) +
+            torch.norm(tensor[tensor < 0], 2)) / tensor.shape[0]
 
 
-class BatchDiversity(nn.Module):
+class BatchVariance(nn.Module):
+
+    def __init__(self, layer_index):
+        super(BatchVariance, self).__init__()
+        self.layer_index = layer_index
 
     @property
     def name(self):
@@ -38,7 +44,7 @@ class BatchDiversity(nn.Module):
         my_gram = list()
 
         for b in range(B):
-            x_p = x[b].view(C, -1)
+            x_p = x[b, self.layer_index].view(1, -1)
             my_gram.append(x_p.mm(x_p.t()).unsqueeze(0) / (H * W))
 
         return torch.cat(my_gram, dim=0)
@@ -48,5 +54,16 @@ class BatchDiversity(nn.Module):
         grams = self.gram_matrix(x).view(B, -1)
 
         mean_grams = torch.mean(grams, dim=0)
-        var_grams = torch.mean(torch.cat([(grams[g] - mean_grams) ** 2 for g in range(B)]))
-        return -var_grams
+        std = sum([torch.norm(grams[g] - mean_grams, 2) for g in range(B)], torch.zeros(1)) / B
+        return -std
+
+
+class BatchDiversity(BatchVariance):
+
+    def forward(self, x):
+        B, C = x.shape[0: 2]
+        grams = self.gram_matrix(x).view(B, -1)
+
+        std = sum([torch.norm(grams[i] - grams[j], 2) for i in range(B) for j in range(i)],
+            torch.zeros(1)) / (B * B / 2)
+        return -std

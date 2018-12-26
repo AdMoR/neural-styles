@@ -59,7 +59,7 @@ class LayerExcitationLoss(nn.Module):
         else:
             noise_activation = layer[:, self.neuron_index]
         # We return the sum over the batch of neuron number index activation values as a loss
-        return -torch.mean(noise_activation)
+        return -torch.norm(noise_activation, 2) / layer.shape[0]
 
 
 class ExtremeSpikeLayerLoss(nn.Module):
@@ -92,7 +92,7 @@ def load_imagenet_labels():
         for line in synsets_file:
             tokens = line.strip().split(" ")
             synset_to_class[tokens[0]] = " ".join(tokens[1:])
-        
+
     index_to_synsets = dict()
     with open("./imagenet_classes.txt") as class_file:
         for i, line in enumerate(class_file):

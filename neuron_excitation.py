@@ -17,21 +17,21 @@ else:
 
 
 def run_optim(image_size=500, layer_index=33, lr=0.005, n_steps=4096):
-    model = prepare_model.load_alexnet(0)
-    losses = [LayerExcitationLoss(layer_index, True), BatchDiversity()]
+    model = prepare_model.load_vgg_16(0)
+    losses = [LayerExcitationLoss(layer_index, False), BatchDiversity(layer_index)]
     tfs = [partial(jitter, 4), scaled_rotation, partial(jitter, 16)]
 
     opt = ParametrizedImageVisualizer(losses=losses, model=model, transforms=tfs, batch_size=4)
 
     #noise = build_freq_img(image_size, image_size)
-    noise = torch.randn((2, 3, image_size, image_size))
+    noise = torch.randn((10, 3, image_size, image_size))
     opt.run(noise, lr=lr, n_steps=n_steps)
 
     simple_save(noise, name=":".join([opt.name, str(n_steps), "{}"]))
 
 
 if __name__ == "__main__":
-    for i in reversed(range(0, 10)):
-        run_optim(layer_index=i, n_steps=1024, lr=0.05)
+    for i in range(0, 1000):
+        run_optim(layer_index=i, n_steps=4 * 1024, lr=0.1)
         print("Finished on channel {}".format(i))
 
