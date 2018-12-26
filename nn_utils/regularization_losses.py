@@ -31,9 +31,9 @@ class ImageNorm(nn.Module):
 
 class BatchVariance(nn.Module):
 
-    def __init__(self, layer_index):
+    def __init__(self, lambda_scale=0.005):
         super(BatchVariance, self).__init__()
-        self.layer_index = layer_index
+        self.lambda_scale = lambda_scale
 
     @property
     def name(self):
@@ -44,7 +44,7 @@ class BatchVariance(nn.Module):
         my_gram = list()
 
         for b in range(B):
-            x_p = x[b, self.layer_index].view(1, -1)
+            x_p = x[b].view(C, -1)
             my_gram.append(x_p.mm(x_p.t()).unsqueeze(0) / (H * W))
 
         return torch.cat(my_gram, dim=0)
@@ -55,7 +55,7 @@ class BatchVariance(nn.Module):
 
         mean_grams = torch.mean(grams, dim=0)
         std = sum([torch.norm(grams[g] - mean_grams, 2) for g in range(B)], torch.zeros(1)) / B
-        return -std
+        return -self.lambda_scale * std
 
 
 class BatchDiversity(BatchVariance):
@@ -66,4 +66,4 @@ class BatchDiversity(BatchVariance):
 
         std = sum([torch.norm(grams[i] - grams[j], 2) for i in range(B) for j in range(i)],
             torch.zeros(1)) / (B * B / 2)
-        return -std
+        return -self.lambda_scale * std
