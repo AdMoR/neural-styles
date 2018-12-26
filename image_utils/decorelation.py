@@ -1,12 +1,20 @@
 import numpy as np
 import torch
 
+
+
+if torch.cuda.is_available():
+    torch.set_default_tensor_type('torch.cuda.FloatTensor')
+else:
+    torch.set_default_tensor_type('torch.FloatTensor')
+
+
 color_correlation_svd_sqrt = np.asarray([[0.26, 0.09, 0.02],
                                          [0.27, 0.00, -0.05],
                                          [0.27, -0.09, 0.03]]).astype("float32")
 max_norm_svd_sqrt = np.max(np.linalg.norm(color_correlation_svd_sqrt, axis=0))
 
-color_mean = [0.48, 0.46, 0.41]       
+color_mean = torch.from_numpy(np.asarray([0.48, 0.46, 0.41])).float()
 
 
 def _linear_decorelate_color(t):
@@ -20,15 +28,14 @@ def _linear_decorelate_color(t):
   """
   C, H, W = t.shape
   # check that inner dimension is 3?
-  t_flat = t.view(3, -1).transpose(1, 0)
+  t_flat = t.contiguous().view(-1, 3)
   color_correlation_normalized = color_correlation_svd_sqrt / max_norm_svd_sqrt
   t_flat = torch.matmul(t_flat, torch.Tensor(color_correlation_normalized.T))
-  print(t_flat.shape)
-  tt = t_flat.transpose(1, 0).contiguous().view((C, H, W))
+  tt = t_flat.contiguous().view((C, H, W))
   return tt
 
 
-def to_valid_rgb(t, decorrelate=False, sigmoid=True):
+def to_valid_rgb(t, decorrelate=True, sigmoid=False):
   """Transform inner dimension of t to valid rgb colors.
   
   In practice this consistes of two parts: 
@@ -50,11 +57,12 @@ def to_valid_rgb(t, decorrelate=False, sigmoid=True):
   if decorrelate:
     t = _linear_decorelate_color(t)
   if decorrelate and not sigmoid:
-    t += color_mean
+    for i in range(3):
+        t[i, :, :] += color_mean[i].cuda()
   if sigmoid:
     return torch.nn.functional.sigmoid(t)
   else:
-    return constrain_L_inf(2*t-1)/2 + 0.5
+    return (2*t-1)/2 + 0.5
 
 
 def _rfft2d_freqs(h, w):
@@ -72,7 +80,7 @@ def _rfft2d_freqs(h, w):
 def build_freq_img(h, w, ch=3, sd=None, decay_power=1):
     freqs = _rfft2d_freqs(h, w)
     fh, fw = freqs.shape
-    sd = sd or 0.01
+    sd = sd or 0.1
     init_val = sd*np.random.randn(ch, fh, fw, 2).astype("float32")
     spectrum_var = torch.autograd.Variable(torch.tensor(init_val, requires_grad=True))
     
