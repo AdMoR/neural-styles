@@ -6,7 +6,7 @@ import torchvision
 
 def save_optim(noise, model, loss, tv, lr, step):
     save_image("./images/{loss}_{model}_{step}_{lr}_{tv}.jpg".\
-        format(loss=loss, model=model, step=step, lr=lr, tv=tv), 
+        format(loss=loss, model=model, step=step, lr=lr, tv=tv),
     noise)
 
 def simple_save(img, name):
@@ -26,9 +26,9 @@ def save_image(path, tensor):
     if len(tensor.size()) == 4:
         B = tensor.shape[0]
         for b in range(B):
-            torchvision.utils.save_image(tensor[b], path.format(b))
+            torchvision.utils.save_image(tensor[b], path.format(b), normalize=True)
     else:
-        torchvision.utils.save_image(tensor, path.format(0))
+        torchvision.utils.save_image(tensor, path.format(0), normalize=True)
 
 def apply_mean_and_std(img, mean, std):
     mean = torch.tensor(mean).view(-1, 1, 1)
