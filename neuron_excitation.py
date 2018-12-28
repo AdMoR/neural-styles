@@ -17,22 +17,23 @@ else:
     torch.set_default_tensor_type('torch.FloatTensor')
 
 
-def run_optim(image_size=224, layer_index=33, lr=0.005, n_steps=4096):
-    model = prepare_model.load_vgg_16(0)
+def run_optim(image_size=500, layer_index=33, lr=0.005, n_steps=4096):
+    model = prepare_model.load_vgg_16("conv_4_3")
     losses = [LayerExcitationLoss(layer_index, False), BatchDiversity()]
     tfs = [partial(jitter, 4), scaled_rotation, partial(jitter, 16)]
 
-    opt = ParametrizedImageVisualizer(losses=losses, model=model, transforms=tfs, batch_size=8)
-    freq_img = build_freq_img(image_size, image_size)
+    opt = ParametrizedImageVisualizer(losses=losses, model=model, transforms=tfs, batch_size=4)
+    freq_img = build_freq_img(image_size, image_size, b=4)
     #noise = torch.randn((8, 3, image_size, image_size))
 
-    opt.run(freq_img, lr=lr, n_steps=n_steps)
+    opt.run(freq_img, lr=lr, n_steps=n_steps, image_size=image_size)
 
-    simple_save(freq_to_rgb(freq_img, 224, 224), name=":".join([opt.name, str(n_steps), "{}"]))
+    simple_save(freq_to_rgb(freq_img, image_size, image_size),
+                name=":".join([opt.name, str(n_steps), "{}"]))
 
 
 if __name__ == "__main__":
-    for i in range(5, 1000):
-        run_optim(layer_index=i, n_steps=4 * 1024, lr=0.3)
+    for i in range(100, 1000):
+        run_optim(layer_index=i, n_steps=1024, lr=0.01)
         print("Finished on channel {}".format(i))
 

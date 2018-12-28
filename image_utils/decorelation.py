@@ -24,12 +24,12 @@ def _linear_decorelate_color(t):
   to map back to normal colors is multiply the square root of your color
   correlations.
   """
-  C, H, W = t.shape
+  B, C, H, W = t.shape
   # check that inner dimension is 3?
-  t_flat = t.permute(1, 2, 0)
+  t_flat = t.permute(0, 2, 3, 1)
   color_correlation_normalized = color_correlation_svd_sqrt / max_norm_svd_sqrt
   t_flat = torch.matmul(t_flat, torch.Tensor(color_correlation_normalized.T))
-  tt = t_flat.permute(2, 0, 1)
+  tt = t_flat.permute(0, 3, 1, 2)
   return tt
 
 
@@ -75,24 +75,24 @@ def _rfft2d_freqs(h, w):
   return np.sqrt(fx*fx + fy*fy)
 
 
-def freq_to_rgb(freq, h, w, ch=3):
-    img = torch.irfft(freq, 2)
-    img = img[:ch, :h, :w]
-    img = to_valid_rgb(img).unsqueeze(0)
+def freq_to_rgb(spectrum_var, h, w, ch=3, decay_power=1):
+    freqs = _rfft2d_freqs(h, w)
+    spectrum_scale = 1.0 / np.maximum(freqs, 1.0 / max(h, w)) ** decay_power
+    spectrum_scale *= np.sqrt(w * h)
+    spectrum_var = spectrum_var * torch.Tensor(spectrum_scale)
+    spectrum_var = spectrum_var.permute(0, 2, 3, 4, 1)
+
+    img = torch.irfft(spectrum_var, 3)
+    img = img[:, :ch, :h, :w]
+    img = to_valid_rgb(img)
     return img
 
 
-def build_freq_img(h, w, ch=3, sd=None, decay_power=1):
-
+def build_freq_img(h, w, ch=3, b=2, sd=None):
     freqs = _rfft2d_freqs(h, w)
     fh, fw = freqs.shape
     sd = sd or 0.1
-    init_val = sd * np.random.randn(2, ch, fh, fw).astype("float32")
+    init_val = sd * np.random.randn(b, 2, ch, fh, fw).astype("float32")
     spectrum_var = torch.autograd.Variable(torch.tensor(init_val, requires_grad=True))
-
-    spectrum_scale = 1.0 / np.maximum(freqs, 1.0 / max(h, w)) ** decay_power
-    spectrum_scale *= np.sqrt(w * h)
-    spectrum_var *= torch.Tensor(spectrum_scale)
-    spectrum_var = spectrum_var.permute(1, 2, 3, 0)
 
     return spectrum_var
