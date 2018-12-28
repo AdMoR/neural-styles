@@ -44,7 +44,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
 
         return loss + regularization
 
-    def run(self, freq, lr, n_steps):
+    def run(self, freq, lr, n_steps, image_size):
         normalizer = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                           std=[0.229, 0.224, 0.225])
         def compose(*functions):
@@ -56,8 +56,8 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         def logging_step(writer=None):
             def closure():
                 optim.zero_grad()
-                noise = freq_to_rgb(freq, 224, 224)
-                #noise[0] = normalizer(noise[0])
+                noise = freq_to_rgb(freq, image_size, image_size)
+                #normalised_noise = normalizer(noise[0]).unsqueeze(0)
 
                 B, C, H, W = noise.shape
                 jitters = [tf_pipeline(noise[b].unsqueeze(0))

@@ -31,16 +31,34 @@ def load_resnet_18(layer_index):
     return "resnet18_{}".format(layer_index), build_subsampler(224), nn_model
 
 
-def load_vgg_16(layer_index):
-    nn_model = models.vgg16(pretrained=True).eval()
-    modules = list(nn_model.children())
+def load_vgg_16(layer_name):
+    vgg = models.vgg16(pretrained=True).eval()
+    modules = list(vgg.children())
     print(">>>>>>>>>", modules)
     replace_relu_with_leaky(modules, ramp=0.1)
+
+    max_layer = -1
+    if layer_name == "conv_1_2":
+        max_layer = 3
+    elif layer_name == "conv_2_2":
+        max_layer = 8
+    elif layer_name == "conv_3_3":
+        max_layer = 15
+    elif layer_name == "conv_4_3":
+        max_layer = 22
+    elif layer_name == "conv_5_1":
+        max_layer = 25
+    elif layer_name == "conv_5_2":
+        max_layer = 27
+    elif layer_name == "conv_5_3":
+        max_layer = 29
+    nn_model = nn.Sequential(vgg.features[0:max_layer])
+
     print(modules)
-    if layer_index == -1:
-        return "vgg16_{}".format("classes"), build_subsampler(224), nn_model
+    if layer_name == -1:
+        return "vgg16_{}".format("classes"), build_subsampler(224), vgg
     else:
-        return "vgg16_{}".format("features"), build_subsampler(224), modules[0]
+        return "vgg16_{}".format(layer_name), build_subsampler(224), nn_model
 
 
 def load_vgg_19(layer_index):
