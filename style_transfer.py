@@ -1,90 +1,43 @@
+import sys
+
 import torch
-import torch.nn as nn
-from torch.nn import Module
-import torchvision.models as models
-from image_utils.data_loading import load_image, save_image
-from image_utils.vgg_normalizer import Normalization
+from torchvision import transforms
+from functools import partial
 
-class NeuralStyleOptimizer(Module):
+from image_utils.data_augmentation import jitter, image_scaling, scaled_rotation
+from image_utils.decorelation import build_freq_img, freq_to_rgb
+from image_utils.data_loading import save_optim, simple_save, load_image
+from nn_utils import prepare_model
+from nn_utils.neuron_losses import LayerExcitationLoss
+from nn_utils.style_losses import StyleLoss
+from nn_utils.regularization_losses import BatchDiversity
+from optimizer_classes.neural_style_optimizer import StyleImageVisualizer
 
-    def __init__(self, content_factor=1, style_factor=1000000):
-        super(NeuralStyleOptimizer, self).__init__()
-        nn_model = models.vgg19(pretrained=True)
-        self.content_factor = content_factor
-        self.style_factor = style_factor
 
-        norm_layer = Normalization()
-        self.model_layer = {}
-        print([(i, l) for i, l in enumerate(list(nn_model.features.children()))])
-        self.model_layer["conv4_1"] = nn.Sequential(*([norm_layer] + list(
-            nn_model.features.children())[:19]))
-        self.model_layer["conv3_1"] = nn.Sequential(*([norm_layer] + list(
-            nn_model.features.children())[:10]))
-        self.model_layer["conv2_1"] = nn.Sequential(*([norm_layer] + list(
-            nn_model.features.children())[:5]))
-        self.model_layer["conv1_1"] = nn.Sequential(*([norm_layer] + list(
-            nn_model.features.children())[:0]))
-        self.loss = nn.L1Loss()
+if torch.cuda.is_available():
+    torch.set_default_tensor_type('torch.cuda.FloatTensor')
+else:
+    torch.set_default_tensor_type('torch.FloatTensor')
 
-    def forward(self, noise_image, content_image, style_image, content_layer="conv4_1",
-                style_layer=["conv4_1", "conv3_1", "conv2_1", "conv1_1"]):
-        # Get the right layer features for the content
-        noise_content = self.model_layer[content_layer].forward(noise_image)
-        target_content = self.model_layer[content_layer].forward(content_image)
-        _, k, m, n = noise_content.size()
-        error_content = self.loss(noise_content, target_content)
 
-        # Get the right layer features for the style
-        for i, layer in enumerate(style_layer):
-            noise_style = self.model_layer[layer].forward(noise_image)
-            target_style = self.model_layer[layer].forward(style_image)
-            if i == 0:
-                error_style = self.loss(self.gram_matrix(noise_style),
-                                        self.gram_matrix(target_style))
-            else:
-                error_style += self.loss(self.gram_matrix(noise_style),
-                                         self.gram_matrix(target_style))
+def run_optim(content_path, sys_path, image_size=500, lr=0.005, n_steps=4096):
+    style_img = load_image(style_path)
+    content_img = load_image(content_path)
+    model = prepare_model.load_style_resnet_18([1, 2, 3, 5], image_size)
+    losses = [StyleLoss(1), StyleLoss(2), StyleLoss(3), StyleLoss(5, content=True)]
+    tfs = [partial(jitter, 4), scaled_rotation, partial(jitter, 16)]
 
-        print(error_content, error_style)
-        error = self.content_factor * error_content + self.style_factor * error_style
+    opt = StyleImageVisualizer(losses=losses, model=model, transforms=tfs, batch_size=1)
+    freq_img = build_freq_img(image_size, image_size, b=1)
 
-        return error
+    opt.run(freq_img, content_img, style_img, lr=lr, n_steps=n_steps, image_size=image_size)
 
-    #######################
-    #       Helpers
-    #######################
-
-    def gram_matrix(self, F):
-        _, k, n, m = F.size()
-        F = F.view(k, n*m)
-        G = F.mm(F.transpose(0, 1)) / (k * m * n)
-        return G
+    simple_save(freq_to_rgb(freq_img, image_size, image_size),
+                name=":".join([opt.name, str(n_steps), "{}"]))
 
 
 if __name__ == "__main__":
-    init = "noise"
-    size = 256
-
-    loss_estimator = NeuralStyleOptimizer()
-    content_image = load_image("/Users/amorvan/Desktop/4844_001.jpg", (size, size))
-    style_image = load_image("/Users/amorvan/Desktop/sample_image/kokoschka.jpg", (1 * size,
-                                                                                   1 * size))
-
-    if init == "content":
-        noise = load_image("/Users/amorvan/Desktop/4844_001.jpg", (size, size))
-    else:
-        noise = torch.randn((1, 3, 256, 256), requires_grad=True)
-    optim = torch.optim.LBFGS([noise.requires_grad_()], lr=0.1)
-
-    for i in range(20):
-        print(">>>", i)
-        save_image("./last_image.jpg", noise)
-        def closure():
-            optim.zero_grad()
-            loss = loss_estimator.forward(noise, content_image, style_image)
-            loss.backward()
-            return loss
-        optim.step(closure)
-
-
+    style_path = sys.argv[1]
+    content_path = sys.argv[2]
+    run_optim(content_path, style_path, n_steps=1024, lr=0.01)
 

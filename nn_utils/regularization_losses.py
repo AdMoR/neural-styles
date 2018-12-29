@@ -26,7 +26,13 @@ class ImageNorm(nn.Module):
 
     def forward(self, tensor):
         return (torch.norm(tensor[tensor > 1] - 1, 2) +
-            torch.norm(tensor[tensor < 0], 2)) / tensor.shape[0]
+            torch.norm(tensor[tensor < -1] + 1, 2)) / tensor.shape[0]
+
+
+def gram_matrix(x):
+    B, C, H, W = x.shape
+    x_p = x.view(B * C, -1) 
+    return x_p.mm(x_p.t()) / (B * C * H * W)
 
 
 class BatchVariance(nn.Module):
@@ -39,19 +45,9 @@ class BatchVariance(nn.Module):
     def name(self):
         return self.__class__.__name__
 
-    def gram_matrix(self, x):
-        B, C, H, W = x.shape
-        my_gram = list()
-
-        for b in range(B):
-            x_p = x[b].view(C, -1)
-            my_gram.append(x_p.mm(x_p.t()).unsqueeze(0) / (H * W))
-
-        return torch.cat(my_gram, dim=0)
-
     def forward(self, x):
         B, C = x.shape[0: 2]
-        grams = self.gram_matrix(x).view(B, -1)
+        grams = gram_matrix(x).view(B, -1)
 
         mean_grams = torch.mean(grams, dim=0)
         std = sum([torch.norm(grams[g] - mean_grams, 2) for g in range(B)], torch.zeros(1)) / B
@@ -62,7 +58,7 @@ class BatchDiversity(BatchVariance):
 
     def forward(self, x):
         B, C = x.shape[0: 2]
-        grams = self.gram_matrix(x).view(B, -1).unsqueeze(1)
+        grams = gram_matrix(x).view(B, -1).unsqueeze(1)
 
         std = sum([grams[i].mm(grams[j].t()) / (torch.norm(grams[i]) * torch.norm(grams[j]))
                    for i in range(B) for j in range(i)],
