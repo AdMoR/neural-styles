@@ -17,7 +17,7 @@ class StyleResNet18(nn.Module):
         last_index = 0
         for layer_index in layers:
             current_index = 4 + layer_index
-            modules[str(layer_index)] = nn.Sequential(*nn_model[last_index: current_index])
+            modules[layer_index] = nn.Sequential(*nn_model[last_index: current_index])
             last_index = current_index
 
         self.modules = modules

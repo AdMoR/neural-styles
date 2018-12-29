@@ -1,12 +1,13 @@
 from torch import nn
 from torchvision import models
 from image_utils.data_augmentation import build_subsampler
+from nn_utils.adapted_networks import StyleResNet18
 from nn_utils.relu_override import replace_relu_with_leaky, override_gradient_relu, delete_relu, \
     VisuRelu6, recursive_relu_replace
 
 
 
-def load_alexnet(layer_index):
+def load_alexnet(layer_index, *args):
     global global_step
     nn_model = models.alexnet(pretrained=True).eval()
     modules = list(nn_model.children())
@@ -26,7 +27,7 @@ def load_inception_v3(layer_index):
     return "inceptionv3_{}".format(layer_index), build_subsampler(299), nn_model
 
 
-def load_resnet_18(layer_index):
+def load_resnet_18(layer_index, image_size=500):
     resnet = models.resnet18(pretrained=True).eval()
     nn_model = list(resnet.children())
     nn_model = recursive_relu_replace(nn_model)
@@ -36,10 +37,15 @@ def load_resnet_18(layer_index):
     else:
         module = nn.Sequential(*nn_model[0: 4 + layer_index])
 
-    return "resnet18_{}".format(layer_index), build_subsampler(224), module
+    return "resnet18_{}".format(layer_index), build_subsampler(image_size), module
 
 
-def load_vgg_16(layer_name):
+def load_style_resnet_18(layers, image_size=500):
+    resnet = StyleResNet18(layers)
+    return "StyleResNet18_{}".format(layers), build_subsampler(image_size), resnet
+
+
+def load_vgg_16(layer_name, *args):
     vgg = models.vgg16(pretrained=True).eval()
     modules = list(vgg.children())
     print(">>>>>>>>>", modules)

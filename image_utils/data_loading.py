@@ -22,6 +22,7 @@ def load_image(path, size=None):
     img = img.unsqueeze(0)
     return img
 
+
 def save_image(path, tensor):
     if len(tensor.size()) == 4:
         B = tensor.shape[0]
@@ -29,6 +30,7 @@ def save_image(path, tensor):
             torchvision.utils.save_image(tensor[b], path.format(b), normalize=True)
     else:
         torchvision.utils.save_image(tensor, path.format(0), normalize=True)
+
 
 def apply_mean_and_std(img, mean, std):
     mean = torch.tensor(mean).view(-1, 1, 1)
