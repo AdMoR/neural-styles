@@ -1,7 +1,8 @@
 from torch import nn
 from torchvision import models
 from image_utils.data_augmentation import build_subsampler
-from nn_utils.relu_override import replace_relu_with_leaky, override_gradient_relu, delete_relu, VisuRelu6
+from nn_utils.relu_override import replace_relu_with_leaky, override_gradient_relu, delete_relu, \
+    VisuRelu6, recursive_relu_replace
 
 
 
@@ -9,7 +10,7 @@ def load_alexnet(layer_index):
     global global_step
     nn_model = models.alexnet(pretrained=True).eval()
     modules = list(nn_model.children())
-    replace_relu_with_leaky(modules[0], ramp=0.1)
+
     print(modules)
     if layer_index == -1:
         return "alexnet_{}".format("classes"), build_subsampler(224), nn_model
@@ -26,9 +27,16 @@ def load_inception_v3(layer_index):
 
 
 def load_resnet_18(layer_index):
-    nn_model = models.resnet18(pretrained=True).eval()
-    nn_model.relu = VisuRelu6()
-    return "resnet18_{}".format(layer_index), build_subsampler(224), nn_model
+    resnet = models.resnet18(pretrained=True).eval()
+    nn_model = list(resnet.children())
+    nn_model = recursive_relu_replace(nn_model)
+
+    if layer_index >= 6:
+        module = resnet
+    else:
+        module = nn.Sequential(*nn_model[0: 4 + layer_index])
+
+    return "resnet18_{}".format(layer_index), build_subsampler(224), module
 
 
 def load_vgg_16(layer_name):

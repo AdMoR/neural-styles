@@ -2,6 +2,18 @@ from torch import nn
 import torch.nn.functional as F
 import torch
 
+
+def recursive_relu_replace(modules, ramp=0.1):
+    for i in range(len(modules)):
+        if type(modules[i]).__name__ == 'Sequential':
+            modules[i] = recursive_relu_replace(modules[i])
+        if type(modules[i]).__name__ == 'BasicBlock':
+            modules[i].relu = torch.nn.LeakyReLU(ramp)
+        if type(modules[i]).__name__ == nn.ReLU.__name__:
+            modules[i] = torch.nn.LeakyReLU(ramp)
+    return modules
+
+
 def delete_relu(modules):
     to_pop = list()
     for i, module in enumerate(modules):
