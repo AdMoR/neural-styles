@@ -59,7 +59,7 @@ class LayerExcitationLoss(nn.Module):
         else:
             noise_activation = layer[:, self.neuron_index]
         # We return the sum over the batch of neuron number index activation values as a loss
-        return -torch.norm(noise_activation, 2) / layer.shape[0]
+        return -torch.sum(noise_activation) / layer.shape[0]
 
 
 class ExtremeSpikeLayerLoss(nn.Module):

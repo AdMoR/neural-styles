@@ -31,7 +31,7 @@ class ImageNorm(nn.Module):
 
 class BatchVariance(nn.Module):
 
-    def __init__(self, lambda_scale=1):
+    def __init__(self, lambda_scale=100):
         super(BatchVariance, self).__init__()
         self.lambda_scale = lambda_scale
 

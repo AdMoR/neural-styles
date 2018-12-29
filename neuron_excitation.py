@@ -18,7 +18,7 @@ else:
 
 
 def run_optim(image_size=500, layer_index=33, lr=0.005, n_steps=4096):
-    model = prepare_model.load_vgg_16("conv_4_3")
+    model = prepare_model.load_resnet_18(3)
     losses = [LayerExcitationLoss(layer_index, False), BatchDiversity()]
     tfs = [partial(jitter, 4), scaled_rotation, partial(jitter, 16)]
 
@@ -33,7 +33,7 @@ def run_optim(image_size=500, layer_index=33, lr=0.005, n_steps=4096):
 
 
 if __name__ == "__main__":
-    for i in range(100, 1000):
+    for i in range(0, 1000):
         run_optim(layer_index=i, n_steps=1024, lr=0.01)
         print("Finished on channel {}".format(i))
 
