@@ -7,6 +7,7 @@ from tensorboardX import SummaryWriter
 
 from nn_utils.regularization_losses import TVLoss, ImageNorm
 from image_utils.decorelation import freq_to_rgb
+from image_utils.normalisation import Normalization
 
 
 class ParametrizedImageVisualizer(torch.nn.Module):
@@ -18,7 +19,9 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         self.image_loss = ImageNorm()
         self.tot_var = TVLoss()
         self.losses = losses
+        self.normalizer = Normalization()
         self.transforms = transforms
+        self.transforms.insert(0, self.normalizer)
 
         self.init_tv = 0.001
         self.lambda_tv = self.init_tv
