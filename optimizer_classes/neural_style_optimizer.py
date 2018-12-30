@@ -23,14 +23,14 @@ class StyleImageVisualizer(torch.nn.Module):
         self.transforms = transforms
         self.transforms.insert(0, self.normalizer)
 
-        self.init_tv = 0.0001
+        self.init_tv = 0.00001
         self.lambda_tv = self.init_tv
-        self.lambda_norm = 100
+        self.lambda_norm = 0
         self.batch_size = batch_size
 
     @property
     def name(self):
-        return "popo"#":".join([self.model_name, "+".join([loss.name for loss in self.losses]), str(self.batch_size), str(self.init_tv), str(self.lambda_norm)])
+        return ":".join([self.model_name, "+".join([loss.name for loss in self.losses]), str(self.batch_size), str(self.init_tv), str(self.lambda_norm)])
 
     def forward(self, noise_image, content_img, style_img, debug=False):
 
@@ -43,15 +43,16 @@ class StyleImageVisualizer(torch.nn.Module):
         content_features = self.feature_layer.forward(content_img)
         style_features = self.feature_layer.forward(style_img)
 
-        loss = sum([loss(noise_features, content_features, style_features) for loss in self.losses])
+        losses = {loss.name: loss(noise_features, content_features, style_features) for loss in self.losses}
 
         regularization = self.lambda_tv * self.tot_var(noise_image) + \
             self.lambda_norm * self.image_loss(noise_image)
 
         if debug:
-            print("loss : ", loss, "reg : ", regularization)
+            print("loss : ", sum(losses.values()), "reg : ", regularization)
 
-        return loss + regularization
+        losses["regularization"] = regularization
+        return losses
 
     def run(self, freq, content_img, style_img, lr, n_steps, image_size):
         def compose(*functions):
@@ -59,12 +60,12 @@ class StyleImageVisualizer(torch.nn.Module):
         tf_pipeline = compose(*self.transforms)
         optim = torch.optim.Adam([freq.requires_grad_()], lr=lr)
         debug = False
+        images = list()
 
         def logging_step(writer=None):
             def closure():
                 optim.zero_grad()
                 noise = freq_to_rgb(freq, image_size, image_size)
-                #normalised_noise = normalizer(noise[0]).unsqueeze(0)
 
                 B, C, H, W = noise.shape
                 jitters = [tf_pipeline(noise[b].unsqueeze(0))
@@ -74,17 +75,19 @@ class StyleImageVisualizer(torch.nn.Module):
                     dim=0
                 )
 
-                loss = self.forward(jittered_batch, content_img, style_img, debug)
+                losses = self.forward(jittered_batch, content_img, style_img, debug)
                 if writer:
-                    writer.add_scalars("style_transfer/" + self.name, {"loss": loss}, i)
+                    writer.add_scalars("style_transfer/" + self.name, losses, i)
                 if debug:
-                    print(torch.max(freq), torch.min(freq), torch.max(noise), torch.min(noise))
                     viz = vutils.make_grid(noise)
                     viz = torch.clamp(viz, 0, 0.999999)
                     if writer:
                         writer.add_image('visu/' + self.name, viz, i)
+                else:
+                    viz = None
+                loss = sum(losses.values())
                 loss.backward()
-                return loss
+                return loss, viz
             return closure
 
         with SummaryWriter(log_dir="./logs", comment=self.name) as writer:
@@ -95,6 +98,9 @@ class StyleImageVisualizer(torch.nn.Module):
                     debug = True
                 else:
                     debug = False
-                loss = optim.step(closure)
+                loss, viz = optim.step(closure)
+                if viz is not None:
+                    images.append(viz.detach().cpu().numpy())
 
+        return images 
 
