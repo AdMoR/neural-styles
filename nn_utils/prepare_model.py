@@ -42,7 +42,7 @@ def load_resnet_18(layer_index, image_size=500):
 
 def load_style_resnet_18(layers, image_size=500):
     resnet = StyleResNet18(layers)
-    return "StyleResNet18_{}".format(layers), build_subsampler(image_size), resnet
+    return "StyleResNet18", build_subsampler(image_size), resnet
 
 
 def load_vgg_16(layer_name, *args):
