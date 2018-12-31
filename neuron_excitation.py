@@ -29,7 +29,7 @@ def run_optim(image_size=500, layer_index=33, lr=0.005, n_steps=4096):
     opt.run(freq_img, lr=lr, n_steps=n_steps, image_size=image_size)
 
     simple_save(freq_to_rgb(freq_img, image_size, image_size),
-                name=":".join([opt.name, str(n_steps), "{}"]))
+                name="-".join([opt.name, str(n_steps), "{}"]))
 
 
 if __name__ == "__main__":
