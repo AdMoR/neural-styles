@@ -15,6 +15,35 @@ max_norm_svd_sqrt = np.max(np.linalg.norm(color_correlation_svd_sqrt, axis=0))
 color_mean = torch.from_numpy(np.asarray([0.48, 0.46, 0.41])).float()
 
 
+def freq_to_rgb(spectrum_var, h, w, ch=3, decay_power=1):
+    spectrum_var = normalise(spectrum_var, h, w, decay_power)
+    img = torch.irfft(spectrum_var, 3)
+    rgb_img = img[:, :ch, :h, :w]
+    rgb_img = to_valid_rgb(rgb_img)
+
+    # If we define a rgba image, the last channel is the transparency mask
+    # We handle it with addition of a noise image in the background
+    if img.shape[1] >= 4:
+        background_freq = build_freq_img(h, w, ch=1, b=img.shape[0], torch_var=False)
+        background = normalise(background_freq, h, w, decay_power)
+        mask = rgb_img[:, 3, :, :]
+        rgb_img = background * (1 - mask) + rgb_img * mask
+        img = torch.cat([rgb_img, mask], dim=1)
+    else:
+        img = rgb_img
+
+    return img
+
+
+def normalise(spectrum_var, h, w, decay_power):
+    freqs = _rfft2d_freqs(h, w)
+    spectrum_scale = 1.0 / np.maximum(freqs, 1.0 / max(h, w)) ** decay_power
+    spectrum_scale *= np.sqrt(w * h)
+    spectrum_var = spectrum_var * torch.Tensor(spectrum_scale)
+    spectrum_var = spectrum_var.permute(0, 2, 3, 4, 1)
+    return spectrum_var
+
+
 def _linear_decorelate_color(t):
   """Multiply input by sqrt of emperical (ImageNet) color correlation matrix.
 
@@ -75,24 +104,15 @@ def _rfft2d_freqs(h, w):
   return np.sqrt(fx*fx + fy*fy)
 
 
-def freq_to_rgb(spectrum_var, h, w, ch=3, decay_power=1):
-    freqs = _rfft2d_freqs(h, w)
-    spectrum_scale = 1.0 / np.maximum(freqs, 1.0 / max(h, w)) ** decay_power
-    spectrum_scale *= np.sqrt(w * h)
-    spectrum_var = spectrum_var * torch.Tensor(spectrum_scale)
-    spectrum_var = spectrum_var.permute(0, 2, 3, 4, 1)
-
-    img = torch.irfft(spectrum_var, 3)
-    img = img[:, :ch, :h, :w]
-    img = to_valid_rgb(img)
-    return img
-
-
-def build_freq_img(h, w, ch=3, b=2, sd=None):
+def build_freq_img(h, w, ch=3, b=2, sd=None, torch_var=True):
     freqs = _rfft2d_freqs(h, w)
     fh, fw = freqs.shape
     sd = sd or 0.1
     init_val = sd * np.random.randn(b, 2, ch, fh, fw).astype("float32")
-    spectrum_var = torch.autograd.Variable(torch.tensor(init_val, requires_grad=True))
+
+    if torch_var:
+        spectrum_var = torch.autograd.Variable(torch.tensor(init_val, requires_grad=True))
+    else:
+        spectrum_var = torch.tensor(init_val)
 
     return spectrum_var
