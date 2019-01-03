@@ -19,9 +19,11 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         self.image_loss = ImageNorm()
         self.tot_var = TVLoss()
         self.losses = losses
-        self.normalizer = Normalization()
         self.transforms = transforms
-        self.transforms.insert(0, self.normalizer)
+        # The normalizer normally needed for the optim should not be used
+        # as it desaturates the final image
+        #self.normalizer = Normalization()
+        #self.transforms.insert(0, self.normalizer)
 
         self.init_tv = 0.001
         self.lambda_tv = self.init_tv
