@@ -34,11 +34,9 @@ class ParametrizedImageVisualizer(torch.nn.Module):
                          str(self.batch_size), str(self.init_tv), str(self.lambda_norm)])
 
     def forward(self, noise_image, debug=False):
-        noise_image = noise_image[:, :3, :, :]
         # Get the right layer features
-        if noise_image.shape[-1] != 224:
-            noise_image = self.subsampler(noise_image)
-        feature = self.feature_layer.forward()
+        noise_image = self.subsampler(noise_image)
+        feature = self.feature_layer.forward(noise_image)
         loss = sum([loss(feature) for loss in self.losses])
 
         regularization = self.lambda_tv * self.tot_var(noise_image) + \

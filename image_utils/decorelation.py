@@ -21,18 +21,7 @@ def freq_to_rgb(spectrum_var, h, w, ch=3, decay_power=1):
     rgb_img = img[:, :ch, :h, :w]
     rgb_img = to_valid_rgb(rgb_img)
 
-    # If we define a rgba image, the last channel is the transparency mask
-    # We handle it with addition of a noise image in the background
-    if img.shape[1] >= 4:
-        background_freq = build_freq_img(h, w, ch=1, b=img.shape[0], torch_var=False)
-        background = normalise(background_freq, h, w, decay_power)
-        mask = rgb_img[:, 3, :, :]
-        rgb_img = background * (1 - mask) + rgb_img * mask
-        img = torch.cat([rgb_img, mask], dim=1)
-    else:
-        img = rgb_img
-
-    return img
+    return rgb_img
 
 
 def normalise(spectrum_var, h, w, decay_power):
