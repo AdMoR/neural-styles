@@ -19,9 +19,12 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         self.image_loss = ImageNorm()
         self.tot_var = TVLoss()
         self.losses = losses
-        self.normalizer = Normalization()
+
         self.transforms = transforms
-        self.transforms.insert(0, self.normalizer)
+        # The normalizer normally needed for the optim should not be used
+        # as it desaturates the final image
+        #self.normalizer = Normalization()
+        #self.transforms.insert(0, self.normalizer)
 
         self.init_tv = 0.001
         self.lambda_tv = self.init_tv
@@ -30,12 +33,12 @@ class ParametrizedImageVisualizer(torch.nn.Module):
 
     @property
     def name(self):
-        return ":".join([self.model_name, "+".join([loss.name for loss in self.losses]), str(self.batch_size), str(self.init_tv), str(self.lambda_norm)])
+        return "-".join([self.model_name, "+".join([loss.name for loss in self.losses]),
+                         str(self.batch_size), str(self.init_tv), str(self.lambda_norm)])
 
     def forward(self, noise_image, debug=False):
         # Get the right layer features
-        if noise_image.shape[-1] != 224:
-            noise_image = self.subsampler(noise_image)
+        noise_image = self.subsampler(noise_image)
         feature = self.feature_layer.forward(noise_image)
         loss = sum([loss(feature) for loss in self.losses])
 
@@ -48,8 +51,6 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         return loss + regularization
 
     def run(self, freq, lr, n_steps, image_size):
-        normalizer = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                          std=[0.229, 0.224, 0.225])
         def compose(*functions):
             return functools.reduce(lambda f, g: lambda x: f(g(x)), functions, lambda x: x)
         tf_pipeline = compose(*self.transforms)
@@ -60,7 +61,6 @@ class ParametrizedImageVisualizer(torch.nn.Module):
             def closure():
                 optim.zero_grad()
                 noise = freq_to_rgb(freq, image_size, image_size)
-                #normalised_noise = normalizer(noise[0]).unsqueeze(0)
 
                 B, C, H, W = noise.shape
                 jitters = [tf_pipeline(noise[b].unsqueeze(0))

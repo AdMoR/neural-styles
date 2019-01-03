@@ -21,7 +21,7 @@ class StyleImageVisualizer(torch.nn.Module):
         self.losses = losses
         self.normalizer = Normalization()
         self.transforms = transforms
-        self.transforms.insert(0, self.normalizer)
+
 
         self.init_tv = 0.00001
         self.lambda_tv = self.init_tv
@@ -39,11 +39,12 @@ class StyleImageVisualizer(torch.nn.Module):
         style_img = self.subsampler(style_img)
 
         # We get a dict of feature layers from this model
-        noise_features = self.feature_layer.forward(noise_image)
-        content_features = self.feature_layer.forward(content_img)
-        style_features = self.feature_layer.forward(style_img)
+        noise_features = self.feature_layer.forward(self.normalizer(noise_image))
+        content_features = self.feature_layer.forward(self.normalizer(content_img))
+        style_features = self.feature_layer.forward(self.normalizer(style_img))
 
-        losses = {loss.name: loss(noise_features, content_features, style_features) for loss in self.losses}
+        losses = {loss.name: loss(noise_features, content_features, style_features)
+                  for loss in self.losses}
 
         regularization = self.lambda_tv * self.tot_var(noise_image) + \
             self.lambda_norm * self.image_loss(noise_image)

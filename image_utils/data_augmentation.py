@@ -6,6 +6,15 @@ import torch
 import random
 
 
+def pad(size, img):
+    p2d = (size, size, size, size)
+    return F.pad(img, p2d, 'constant', 0)
+
+
+def raw_crop(size, img):
+    return img[:, :, size: -size, size: -size]
+
+
 def crop(img, crop_size=(224, 224)):
     """
     The received image has format (C, H, W)

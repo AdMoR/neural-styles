@@ -2,6 +2,8 @@ import urllib, os
 from torch import nn
 import torch
 
+from image_utils.decorelation import to_valid_rgb
+
 
 class CenteredNeuronExcitationLoss(nn.Module):
 
@@ -60,6 +62,18 @@ class LayerExcitationLoss(nn.Module):
             noise_activation = layer[:, self.neuron_index]
         # We return the sum over the batch of neuron number index activation values as a loss
         return -torch.sum(noise_activation) / layer.shape[0]
+
+
+class TransparencyLayerExcitationLoss(LayerExcitationLoss):
+
+    def __init__(self, mask, neuron_index, last_layer=False, *args, **kwargs):
+        self.mask = to_valid_rgb(mask, decorrelate=False)
+        super(TransparencyLayerExcitationLoss, self).__init__(neuron_index, last_layer, *args,
+                                                              **kwargs)
+
+    def forward(self, layer):
+        return (1 - torch.mean(self.mask)) * \
+               super(TransparencyLayerExcitationLoss, self).forward(layer)
 
 
 class ExtremeSpikeLayerLoss(nn.Module):
