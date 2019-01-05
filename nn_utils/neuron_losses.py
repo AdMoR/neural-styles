@@ -3,6 +3,9 @@ from torch import nn
 import torch
 
 from image_utils.decorelation import to_valid_rgb
+from image_utils.data_augmentation import image_scaling, scale
+
+from .regularization_losses import gram_matrix
 
 
 class CenteredNeuronExcitationLoss(nn.Module):
@@ -55,13 +58,14 @@ class LayerExcitationLoss(nn.Module):
             return self.__class__.__name__ + str(self.neuron_index)
 
     def forward(self, layer):
-        # Flatten the activation map
         if len(layer.shape) == 4:
+            B, C, H, W = layer.shape
             noise_activation = layer[:, self.neuron_index, :, :]
         else:
+            B, C = layer.shape
             noise_activation = layer[:, self.neuron_index]
         # We return the sum over the batch of neuron number index activation values as a loss
-        return -torch.sum(noise_activation) / layer.shape[0]
+        return -torch.mean(noise_activation)
 
 
 class TransparencyLayerExcitationLoss(LayerExcitationLoss):
@@ -74,6 +78,40 @@ class TransparencyLayerExcitationLoss(LayerExcitationLoss):
     def forward(self, layer):
         return (1 - torch.mean(self.mask)) * \
                super(TransparencyLayerExcitationLoss, self).forward(layer)
+
+
+class CombinedLayerExcitationLoss(nn.Module):
+
+    def __init__(self, mask=None, neuron_index=0, neuron_index_b=None, *args, **kwargs):
+        super(CombinedLayerExcitationLoss, self).__init__()
+        self.neuron_a = neuron_index
+        self.neuron_b = neuron_index + 1 if neuron_index_b is None else neuron_index_b
+        if mask is not None:
+            self.mask = mask
+        else:
+            self.mask = self.build_mask()
+
+    def build_mask(self):
+        mask = torch.ones((2, 2))
+        mask[0, 0] = 0
+        mask[1, 1] = 0
+        return mask
+
+    @property
+    def name(self):
+        return self.__class__.__name__ + str(self.neuron_a) + "+" + str(self.neuron_b)
+
+    def forward(self, layer):
+        B, C, H, W = layer.shape
+        if H != self.mask.shape[-2] or W != self.mask.shape[-1]:
+            self.mask = scale(self.mask, 2 / H, (H, W))
+        part_one = (layer[:, self.neuron_a, :, :] * self.mask)
+        part_two = (layer[:, self.neuron_b, :, :] * (1 - self.mask))
+        part_one_error = layer[:, self.neuron_a, :, :] * (1 - self.mask)
+        part_two_error = layer[:, self.neuron_b, :, :] * (self.mask)
+        mix_rate_one = torch.sigmoid(torch.mean(part_one - part_two_error))
+        mix_rate_two = torch.sigmoid(torch.mean(part_two - part_one_error))
+        return -(torch.mean(mix_rate_two * part_one + mix_rate_one * part_two)) 
 
 
 class ExtremeSpikeLayerLoss(nn.Module):

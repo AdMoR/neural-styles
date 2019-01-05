@@ -83,7 +83,7 @@ def scaled_rotation(x, in_theta=None, scale=None):
     return F.grid_sample(x, grid)
 
 
-def scale(x, scale):
+def scale(x, scale, out_shape):
 
     if scale is None:
         scale = random.choice([0.95, 0.975, 1, 1.025, 1.05])
@@ -91,20 +91,21 @@ def scale(x, scale):
     theta = torch.zeros((1, 2, 3))
     theta[0, 0, 0] = 1
     theta[0, 1, 1] = 1
-    grid = scale * F.affine_grid(theta, timg.size())
-    return F.grid_sample(x, grid)
+    grid = scale * F.affine_grid(theta, (1, 1,) + out_shape)
+    return F.grid_sample(x.unsqueeze(0).unsqueeze(0), grid)
 
 
-def image_scaling(img, subsample=None):
+def image_scaling(img, subsample=None, target_shape=None):
 
-    if subsample is None:
+    if subsample is None and target_shape is None:
         subsample = random.choice([0.9, 0.95, 1, 1.05, 1.1])
-    if subsample == 1:
-        return img
-
-    N, C, H, W = img.shape
-    target_shape = (int(subsample * H), int(subsample * W))
-
+        if subsample == 1:
+            return img
+    H, W = map(int, img.shape[-2:])
+    if target_shape is None:    
+        target_shape = (int(subsample * H), int(subsample * W))
+        
+    N = 1
     grid = torch.zeros((N,) + target_shape + (2,))
     out = torch.zeros(img.shape)
 
@@ -117,7 +118,7 @@ def image_scaling(img, subsample=None):
     scaled = F.grid_sample(img, grid)
     origin = (abs(int(0.5 * (H - target_shape[0]))), abs(int(0.5 * (W - target_shape[1]))))
 
-    if subsample < 1.0:
+    if subsubsample < 1.0:
         target = (origin[0] + target_shape[0], origin[1] + target_shape[1])
         out[:, :, origin[0]:target[0], origin[1]:target[1]] = scaled
         return out
