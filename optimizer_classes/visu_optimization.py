@@ -36,9 +36,10 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         return "-".join([self.model_name, "+".join([loss.name for loss in self.losses]),
                          str(self.batch_size), str(self.init_tv), str(self.lambda_norm)])
 
-    def forward(self, noise_image, debug=False):
+    def forward(self, noise_image, debug=False, mask=None):
         # Get the right layer features
         noise_image = self.subsampler(noise_image)
+        noise_image = self.losses[0].prepare_rgb_img(noise_image, mask)
         feature = self.feature_layer.forward(noise_image)
         loss = sum([loss(feature) for loss in self.losses])
 
@@ -60,7 +61,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         def logging_step(writer=None):
             def closure():
                 optim.zero_grad()
-                noise = freq_to_rgb(freq, image_size, image_size)
+                noise = freq_to_rgb(freq[:, :, :3, :, :], image_size, image_size)
 
                 B, C, H, W = noise.shape
                 jitters = [tf_pipeline(noise[b].unsqueeze(0))
@@ -70,12 +71,12 @@ class ParametrizedImageVisualizer(torch.nn.Module):
                     dim=0
                 )
 
-                loss = self.forward(jittered_batch, debug)
+                loss = self.forward(jittered_batch, debug, freq[:, :, 3:, :, :])
                 if writer:
                     writer.add_scalars("neuron_excitation/" + self.name, {"loss": loss}, i)
                 if debug:
-                    print(torch.max(freq), torch.min(freq), torch.max(noise), torch.min(noise))
-                    viz = vutils.make_grid(noise)
+                    #print(torch.max(freq), torch.min(freq), torch.max(noise), torch.min(noise))
+                    viz = vutils.make_grid(noise * self.losses[0].mask)
                     viz = torch.clamp(viz, 0, 0.999999)
                     if writer:
                         writer.add_image('visu/' + self.name, viz, i)

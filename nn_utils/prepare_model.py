@@ -45,7 +45,7 @@ def load_style_resnet_18(layers, image_size=500):
     return "StyleResNet18", build_subsampler(image_size), resnet
 
 
-def load_vgg_16(layer_name, *args):
+def load_vgg_16(layer_name, image_size=500, *args):
     vgg = models.vgg16(pretrained=True).eval()
     modules = list(vgg.children())
     print(">>>>>>>>>", modules)
@@ -70,9 +70,9 @@ def load_vgg_16(layer_name, *args):
 
     print(modules)
     if layer_name == -1:
-        return "vgg16_{}".format("classes"), build_subsampler(224), vgg
+        return "vgg16_{}".format("classes"), build_subsampler(image_size), vgg
     else:
-        return "vgg16_{}".format(layer_name), build_subsampler(224), nn_model
+        return "vgg16_{}".format(layer_name), build_subsampler(image_size), nn_model
 
 
 def load_vgg_19(layer_index):
