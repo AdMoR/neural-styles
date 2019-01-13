@@ -22,7 +22,12 @@ def save_optim(noise, model, loss, tv, lr, step):
 
 
 def simple_save(img, name):
-    save_image("./images/{}.jpg".format(name), img)
+    _, C, _, _ = img.shape
+    if C > 3:
+        img_format = "png"
+    else:
+        img_format = "jpg"
+    save_image("./images/{}.{}".format(name, img_format), img)
 
 
 def load_image(path, size=None):

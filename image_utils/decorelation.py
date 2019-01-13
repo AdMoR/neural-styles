@@ -15,13 +15,36 @@ max_norm_svd_sqrt = np.max(np.linalg.norm(color_correlation_svd_sqrt, axis=0))
 color_mean = torch.from_numpy(np.asarray([0.48, 0.46, 0.41])).float()
 
 
-def freq_to_rgb(spectrum_var, h, w, ch=3, decay_power=1):
+def freq_to_rgb(spectrum_var, h, w, ch=3, decay_power=1, decorrelate=True):
     spectrum_var = normalise(spectrum_var, h, w, decay_power)
     img = torch.irfft(spectrum_var, 3)
     rgb_img = img[:, :ch, :h, :w]
-    rgb_img = to_valid_rgb(rgb_img)
+    rgb_img = to_valid_rgb(rgb_img, decorrelate=decorrelate)
 
     return rgb_img
+
+def freq_to_rgba(spectrum_var, h, w, ch=4, decay_power=1, decorrelate=True):
+
+    rgb_spec = spectrum_var[:, :, :3, :, :]
+    print(rgb_spec.shape)
+    pre_img = normalise(rgb_spec, h, w, decay_power)
+    img = torch.irfft(pre_img, 3)
+
+    rgb_img = img[:, :3, :h, :w]
+    rgb_img = to_valid_rgb(rgb_img, decorrelate=decorrelate)
+
+    print("rgb", torch.mean(rgb_img), torch.max(rgb_img))
+
+    pre_mask = spectrum_var[:, :, 3:, :, :]
+    print(pre_mask.shape)
+    mask_var = normalise(pre_mask, h, w, decay_power)
+    mask =  to_valid_rgb(torch.irfft(mask_var, 3), decorrelate=False)[:, :, :h, :w]
+
+    print("mask ", torch.mean(mask), torch.max(mask))
+
+    final = torch.cat([rgb_img, mask], dim=1)
+
+    return final
 
 
 def normalise(spectrum_var, h, w, decay_power):

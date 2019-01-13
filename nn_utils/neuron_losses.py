@@ -2,7 +2,7 @@ import urllib, os
 from torch import nn
 import torch
 
-from image_utils.decorelation import to_valid_rgb
+from image_utils.decorelation import to_valid_rgb, build_freq_img, freq_to_rgb
 from image_utils.data_augmentation import image_scaling, scale
 
 from .regularization_losses import gram_matrix
@@ -13,6 +13,11 @@ class CenteredNeuronExcitationLoss(nn.Module):
     def __init__(self, neuron_index, *args, **kwargs):
         super(CenteredNeuronExcitationLoss, self).__init__()
         self.neuron_index = neuron_index
+        self.index_to_syn, self.syn_to_class = load_imagenet_labels()
+
+    @property
+    def name(self):
+        return self.__class__.__name__ + str(self.neuron_index)
 
     def forward(self, layer):
         # We need a 4D tensor
@@ -30,6 +35,11 @@ class DeepDreamLoss(nn.Module):
     def __init__(self, neuron_index, *args, **kwargs):
         super(DeepDreamLoss, self).__init__()
         self.neuron_index = neuron_index
+        self.index_to_syn, self.syn_to_class = load_imagenet_labels()
+
+    @property
+    def name(self):
+        return self.__class__.__name__ + str(self.neuron_index)
 
     def forward(self, layer):
         # We need a 4D tensor
@@ -53,7 +63,7 @@ class LayerExcitationLoss(nn.Module):
     @property
     def name(self):
         if self.last_layer:
-            return self.__class__.__name__ + "*" + str(self.syn_to_class[self.index_to_syn[self.neuron_index]]) + "*"
+            return self.__class__.__name__ + "=" + str(self.syn_to_class[self.index_to_syn[self.neuron_index]]) + "*"
         else:
             return self.__class__.__name__ + str(self.neuron_index)
 
@@ -65,18 +75,27 @@ class LayerExcitationLoss(nn.Module):
             B, C = layer.shape
             noise_activation = layer[:, self.neuron_index]
         # We return the sum over the batch of neuron number index activation values as a loss
-        return -torch.mean(noise_activation)
+        return -torch.sum(noise_activation)
 
 
-class TransparencyLayerExcitationLoss(LayerExcitationLoss):
+class TransparencyLayerExcitationLoss(CenteredNeuronExcitationLoss):
 
-    def __init__(self, mask, neuron_index, last_layer=False, *args, **kwargs):
-        self.mask = to_valid_rgb(mask, decorrelate=False)
+    def __init__(self, neuron_index, last_layer=False, *args, **kwargs):
         super(TransparencyLayerExcitationLoss, self).__init__(neuron_index, last_layer, *args,
                                                               **kwargs)
 
+    def prepare_rgb_img(self, layer, mask):
+        B, _, _, H, _ = mask.shape
+        mask = freq_to_rgb(mask, H, H, decorrelate=False)
+        self.mask = mask
+        background_freq = build_freq_img(H, H, ch=3, b=B, torch_var=False)
+        background = freq_to_rgb(background_freq, H, H)
+        #print(background.shape, self.mask.shape, layer.shape)
+        layer = background * (1 - mask) + layer * mask
+        return layer
+
     def forward(self, layer):
-        return (1 - torch.mean(self.mask)) * \
+        return (1 - torch.mean(self.mask)) ** 2 * \
                super(TransparencyLayerExcitationLoss, self).forward(layer)
 
 
