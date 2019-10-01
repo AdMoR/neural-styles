@@ -19,26 +19,23 @@ class GraclusPooling:
 		3: [0]
 		4: [0, 2]
 		"""
-		vertices = {i: Vertex(i, False, None, 0, list()) for i in range(max(edges.keys()) + 1)}
+		all_graphs = list()
+		vertices = {i: Vertex(i, False, None, 0) for i in range(max(edges.keys()) + 1)}
 		weights = {i: {j: 1 for j in edges[i]} for i in edges.keys()}
-
-		print(vertices)
 		round_ = 0
 
 		while len(vertices) > 1:
-			print(round_)
-			print(weights)
-			vertices, weights = cls.one_round(vertices, weights)
+			vertices, weights = cls.one_round(vertices, weights, all_graphs)
 			round_ += 1
 
-		return weights
+		return all_graphs
 
 	###########################
 	#        Main steps
 	###########################
 
 	@classmethod
-	def one_round(cls, vertices, weights):
+	def one_round(cls, vertices, weights, all_graphs):
 		"""
 		In this function, we build the next level of pooling
 
@@ -77,12 +74,7 @@ class GraclusPooling:
 			if best_neighbour:
 				cls.update_vertex_merge_ststaus(best_neighbour, new_index, vertex_level, vertices)
 				children.append(best_neighbour)
-				#vertices[best_neighbour] = Vertex(best_neighbour, True, new_index, )
-				#vertices[best_neighbour].is_merged = True
-				#vertices[best_neighbour].new_index = new_index
 			cls.update_vertex_merge_ststaus(v.index, new_index, vertex_level, vertices)
-			#v.is_merged = True
-			#v.new_index = new_index
 
 			# 2.b : Add the new struct in the next graph
 			next_vertices[new_index] = Vertex(new_index, False, None, vertex_level + 1)
@@ -92,6 +84,8 @@ class GraclusPooling:
 			assert(vertices[best_neighbour].is_merged)
 			cls.update_weights_for_vertex(vertices[v.index], vertices, weights, next_weights)
 			cls.update_weights_for_vertex(vertices[best_neighbour], vertices, weights, next_weights)
+
+		all_graphs.append(list(vertices.values()))
 
 		return next_vertices, next_weights
 
@@ -125,10 +119,6 @@ class GraclusPooling:
 		if depth >= len(all_graphs):
 			return None  # We already reached the leaves
 		return [v.index for v in all_graphs[depth] if v.new_index == searched_new_index]
-
-
-
-
 
 
 	###########################
@@ -173,10 +163,7 @@ class TestGraclusPooling(TestCase):
 
 	def test_run_once(self):
 		vertices, weights = GraclusPooling.build_vertices_and_weights_from_edges(self.cube_edges)
-
-		new_vertices, new_weights = GraclusPooling.one_round(vertices, weights)
-		print(dict(new_weights))
-		#self.assertEqual(len(weights), 1)
+		new_vertices, new_weights = GraclusPooling.one_round(vertices, weights, list())
 		assert(all([w <= 2 for l in dict(new_weights).values() for w in l.values() ]))
 
 	def test_tree_building(self):
@@ -190,6 +177,16 @@ class TestGraclusPooling(TestCase):
 		print(tree[2 ** (len(all_graphs) - 1) - 1:])
 		self.assertListEqual(tree[2 ** (len(all_graphs) - 1) - 1:], [0, 2, 1, 3])
 		self.assertEqual(all_graphs[-1][-1].is_merged, False)
+
+	def test_complete_truc(self):
+		all_graphs = GraclusPooling.run(self.cube_edges)
+		print("all graphs : ", all_graphs)
+		tree = [0 for _ in range(2 ** len(all_graphs) - 1)]
+		GraclusPooling.tree_build(0, 0, all_graphs, tree)
+
+		print("------>", tree)
+		assert(set(tree) == set(range(len(self.cube_edges))))
+
 
 
 
