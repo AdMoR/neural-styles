@@ -41,7 +41,7 @@ class CurveOptimizer(NamedTuple):
     generator_func: Callable
     forward_model_func: Callable
 
-    def gen_and_optimize(self):
+    def gen_and_optimize(self, color_optimisation_activated=False):
 
         # Thanks to Katherine Crowson for this.
         # In the CLIPDraw code used to generate examples, we don't normalize images
@@ -74,8 +74,15 @@ class CurveOptimizer(NamedTuple):
             path.points.requires_grad = True
             points_vars.append(path.points)
 
+        color_vars = list()
+        for group in shape_groups:
+
+            group.stroke_color.requires_grad = True
+            color_vars.append(group.stroke_color)
+
         # Optimizers
         points_optim = torch.optim.Adam(points_vars, lr=1.0)
+        color_optim = torch.optim.Adam(color_vars, lr=1.0)
 
         # Run the main optimization loop
         for t in range(self.num_iter):
@@ -89,6 +96,8 @@ class CurveOptimizer(NamedTuple):
                     g['lr'] = 0.2
 
             points_optim.zero_grad()
+            if color_optimisation_activated:
+                color_optim.zero_grad()
 
             NUM_AUGS = 4
 
@@ -103,9 +112,13 @@ class CurveOptimizer(NamedTuple):
 
             # Take a gradient descent step.
             points_optim.step()
+            if color_optimisation_activated:
+                color_optim.step()
 
             for path in shapes:
                 path.stroke_width.data.clamp_(1.0, max_width)
+            for group in shape_groups:
+                group.stroke_color.data.clamp_(0.0, 1.0)
 
             #show_result(img, t, loss)
 
@@ -153,6 +166,16 @@ class Generator(NamedTuple):
     num_paths: int
     canvas_width: int
     canvas_height: int
+    allow_color: bool = False
+    allow_alpha: bool = False
+
+    @property
+    def stroke_color(self):
+        alpha = 1. if not self.allow_alpha else random.random()
+        if self.allow_color:
+            return random.random(), random.random(), random.random(), alpha
+        else:
+            return 0., 0., 0., alpha
 
     def gen_func(self):
         def setup_parameters(*args, **kwargs):
@@ -180,7 +203,7 @@ class Generator(NamedTuple):
                                      stroke_width=torch.tensor(1.0), is_closed=False)
                 shapes.append(path)
                 path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]), fill_color=None,
-                                                 stroke_color=torch.tensor([0, 0, 0, 1]))
+                                                 stroke_color=torch.tensor(self.stroke_color))
                 shape_groups.append(path_group)
             return shapes, shape_groups
         return setup_parameters

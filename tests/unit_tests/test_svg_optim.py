@@ -17,6 +17,11 @@ class TestCurveOptimizer(TestCase):
         optimizer = CurveOptimizer(1, 224, 224, self.gen.gen_func(), forward_func)
         optimizer.gen_and_optimize()
 
+    def test_color_with_dummy(self):
+        forward_func = lambda img_batch, **kwargs: torch.linalg.norm(img_batch)
+        optimizer = CurveOptimizer(1, 224, 224, self.gen.gen_func(), forward_func)
+        optimizer.gen_and_optimize(color_optimisation_activated=True)
+
     def test_with_vgg_excitation(self):
         optimizer = CurveOptimizer(10, 224, 224, self.gen.gen_func(), gen_vgg16_excitation_func("conv_1_2", 0))
         optimizer.gen_and_optimize()
