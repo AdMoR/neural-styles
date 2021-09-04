@@ -1,3 +1,5 @@
+from enum import Enum
+
 from torch import nn
 from torchvision import models
 from image_utils.data_augmentation import build_subsampler
@@ -5,6 +7,15 @@ from nn_utils.adapted_networks import StyleResNet18
 from nn_utils.relu_override import replace_relu_with_leaky, override_gradient_relu, delete_relu, \
     VisuRelu6, recursive_relu_replace
 
+
+class VGGLayers(Enum):
+    Conv1_2 = "conv_1_2"
+    Conv2_2 = "conv_2_2"
+    Conv3_3 = "conv_3_3"
+    Conv4_3 = "conv_4_3"
+    Conv5_1 = "conv_5_1"
+    Conv5_2 = "conv_5_2"
+    Conv5_3 = "conv_5_3"
 
 
 def load_alexnet(layer_index, *args):
@@ -48,27 +59,25 @@ def load_style_resnet_18(layers, image_size=500):
 def load_vgg_16(layer_name, image_size=500, *args):
     vgg = models.vgg16(pretrained=True).eval()
     modules = list(vgg.children())
-    print(">>>>>>>>>", modules)
     replace_relu_with_leaky(modules, ramp=0.1)
 
     max_layer = -1
-    if layer_name == "conv_1_2":
+    if layer_name == VGGLayers.Conv1_2:
         max_layer = 3
-    elif layer_name == "conv_2_2":
+    elif layer_name == VGGLayers.Conv2_2:
         max_layer = 8
-    elif layer_name == "conv_3_3":
+    elif layer_name == VGGLayers.Conv3_3:
         max_layer = 15
-    elif layer_name == "conv_4_3":
+    elif layer_name == VGGLayers.Conv4_3:
         max_layer = 22
-    elif layer_name == "conv_5_1":
+    elif layer_name == VGGLayers.Conv5_1:
         max_layer = 25
-    elif layer_name == "conv_5_2":
+    elif layer_name == VGGLayers.Conv5_2:
         max_layer = 27
-    elif layer_name == "conv_5_3":
+    elif layer_name == VGGLayers.Conv5_3:
         max_layer = 29
     nn_model = nn.Sequential(vgg.features[0:max_layer])
 
-    print(modules)
     if layer_name == -1:
         return "vgg16_{}".format("classes"), build_subsampler(image_size), vgg
     else:

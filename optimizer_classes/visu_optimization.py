@@ -1,5 +1,6 @@
 import functools
 
+import PIL
 import torch
 import torchvision.utils as vutils
 from torchvision import transforms
@@ -8,6 +9,32 @@ from tensorboardX import SummaryWriter
 from nn_utils.regularization_losses import TVLoss, ImageNorm
 from image_utils.decorelation import freq_to_rgb
 from image_utils.normalisation import Normalization
+
+
+def imshow(a, fmt='jpeg'):
+    try
+        display(Image(data=imencode(a, fmt)))
+    except Exception:
+        pass
+
+def show_img(img):
+    img = np.transpose(img, (1, 2, 0))
+    img = np.clip(img, 0, 1)
+    img = np.uint8(img * 254)
+    # img = np.repeat(img, 4, axis=0)
+    # img = np.repeat(img, 4, axis=1)
+    pimg = PIL.Image.fromarray(img, mode="RGB")
+    imshow(pimg)
+
+
+def show_result(img, t, loss, image_features, nouns_features):
+    if t % 10 == 0:
+        show_img(img.detach().cpu().numpy()[0])
+        # show_img(torch.cat([img.detach(), img_aug.detach()], axis=3).cpu().numpy()[0])
+        print('render loss:', loss.item())
+        print('iteration:', t)
+
+
 
 
 class ParametrizedImageVisualizer(torch.nn.Module):

@@ -34,7 +34,6 @@ else:
 
 
 class CurveOptimizer(NamedTuple):
-    prompt: str
     num_iter: int
     canvas_width: int
     canvas_height: int
@@ -43,13 +42,6 @@ class CurveOptimizer(NamedTuple):
     forward_model_func: Callable
 
     def gen_and_optimize(self):
-        prompt = self.prompt
-        neg_prompt = "A badly drawn sketch."
-        neg_prompt_2 = "Many ugly, messy drawings."
-        text_input = clip.tokenize(prompt).to(device)
-        text_input_neg1 = clip.tokenize(neg_prompt).to(device)
-        text_input_neg2 = clip.tokenize(neg_prompt_2).to(device)
-        use_negative = True  # Use negative prompts?
 
         # Thanks to Katherine Crowson for this.
         # In the CLIPDraw code used to generate examples, we don't normalize images
@@ -75,6 +67,7 @@ class CurveOptimizer(NamedTuple):
             self.canvas_width, self.canvas_height, shapes, shape_groups)
         render = pydiffvg.RenderFunction.apply
         img = render(self.canvas_width, self.canvas_height, 2, 2, 0, None, *scene_args)
+        background_image = torch.ones(img.shape)
         points_vars = []
 
         for path in shapes:
@@ -99,7 +92,7 @@ class CurveOptimizer(NamedTuple):
 
             NUM_AUGS = 4
 
-            img = self.gen_image_from_curves(t, shapes, shape_groups, gamma)
+            img = self.gen_image_from_curves(t, shapes, shape_groups, gamma, background_image)
             im_batch = self.data_augment(img, NUM_AUGS, use_normalized_clip)
             loss = self.forward_model_func(im_batch)
             #image_features, text_features, text_features_neg1, text_features_neg2 = \
@@ -114,15 +107,15 @@ class CurveOptimizer(NamedTuple):
             for path in shapes:
                 path.stroke_width.data.clamp_(1.0, max_width)
 
-            #self.show_result(img, t, loss, image_features, nouns_features)
+            #show_result(img, t, loss)
 
-        return shapes,
+        return shapes, shape_groups
 
-    def gen_image_from_curves(self, t, shapes, shape_groups, gamma):
+    def gen_image_from_curves(self, t, shapes, shape_groups, gamma, background_image):
         render = pydiffvg.RenderFunction.apply
         scene_args = pydiffvg.RenderFunction.serialize_scene( \
             self.canvas_width, self.canvas_height, shapes, shape_groups)
-        img = render(self.canvas_width, self.canvas_height, 2, 2, t, None, *scene_args)
+        img = render(self.canvas_width, self.canvas_height, 2, 2, t, background_image, *scene_args)
         img = img[:, :, :3]
 
         dir_ = "./gens/"
@@ -139,13 +132,13 @@ class CurveOptimizer(NamedTuple):
     def data_augment(self, img, NUM_AUGS, use_normalized_clip=True):
         # Image Augmentation Transformation
         augment_trans = transforms.Compose([
-            transforms.RandomPerspective(fill=1, p=1, distortion_scale=0.5),
+            transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
             transforms.RandomResizedCrop(224, scale=(0.7, 0.9)),
         ])
 
         if use_normalized_clip:
             augment_trans = transforms.Compose([
-                transforms.RandomPerspective(fill=1, p=1, distortion_scale=0.5),
+                transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
                 transforms.RandomResizedCrop(224, scale=(0.7, 0.9)),
                 transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
             ])
@@ -187,12 +180,10 @@ class Generator(NamedTuple):
                                      stroke_width=torch.tensor(1.0), is_closed=False)
                 shapes.append(path)
                 path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]), fill_color=None,
-                                                 stroke_color=torch.tensor([1, 1, 1, 1]))
+                                                 stroke_color=torch.tensor([0, 0, 0, 1]))
                 shape_groups.append(path_group)
             return shapes, shape_groups
-
         return setup_parameters
-
 
 
 class LoadedSvgGen(NamedTuple):
