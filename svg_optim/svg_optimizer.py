@@ -68,6 +68,7 @@ class CurveOptimizer(NamedTuple):
         render = pydiffvg.RenderFunction.apply
         img = render(self.canvas_width, self.canvas_height, 2, 2, 0, None, *scene_args)
         background_image = torch.ones(img.shape)
+
         points_vars = []
 
         for path in shapes:
@@ -76,28 +77,36 @@ class CurveOptimizer(NamedTuple):
 
         color_vars = list()
         for group in shape_groups:
-
             group.stroke_color.requires_grad = True
             color_vars.append(group.stroke_color)
 
+        stroke_vars = list()
+        for path in shapes:
+            path.stroke_width.requires_grad = True
+            stroke_vars.append(path.stroke_width)
+
         # Optimizers
         points_optim = torch.optim.Adam(points_vars, lr=1.0)
-        color_optim = torch.optim.Adam(color_vars, lr=1.0)
+        color_optim = torch.optim.Adam(color_vars, lr=0.5)
+        stroke_optim = torch.optim.Adam(stroke_vars, lr=0.5)
 
         # Run the main optimization loop
+        all_groups = [g.param_groups for g in [points_optim, color_optim, stroke_optim]]
         for t in range(self.num_iter):
-
             # Anneal learning rate (makes videos look cleaner)
             if t == int(self.num_iter * 0.5):
-                for g in points_optim.param_groups:
-                    g['lr'] = 0.5
+                print(f"Iter {t}")
+                for g in all_groups:
+                    g['lr'] *= 0.5
             if t == int(self.num_iter * 0.75):
-                for g in points_optim.param_groups:
-                    g['lr'] = 0.2
+                print(f"Iter {t}")
+                for g in all_groups:
+                    g['lr'] *= 0.5
 
             points_optim.zero_grad()
             if color_optimisation_activated:
                 color_optim.zero_grad()
+                stroke_optim.zero_grad()
 
             NUM_AUGS = 4
 
@@ -114,13 +123,12 @@ class CurveOptimizer(NamedTuple):
             points_optim.step()
             if color_optimisation_activated:
                 color_optim.step()
+                stroke_optim.step()
 
             for path in shapes:
                 path.stroke_width.data.clamp_(1.0, max_width)
             for group in shape_groups:
                 group.stroke_color.data.clamp_(0.0, 1.0)
-
-            #show_result(img, t, loss)
 
         return shapes, shape_groups
 
@@ -135,7 +143,7 @@ class CurveOptimizer(NamedTuple):
         if not os.path.exists(dir_):
             os.mkdir(dir_)
 
-        if t % 5 == 0:
+        if t % 200 == 1:
             pydiffvg.imwrite(img.cpu(), os.path.join(dir_, 'iter_{}.png'.format(int(t / 5))), gamma=gamma)
         img = img[:, :, :3]
         img = img.unsqueeze(0)

@@ -11,6 +11,12 @@ def gen_vgg16_excitation_func(layer_name, layer_index):
     name, _, nn_model = load_vgg_16(layer_name)
     tvloss = TVLoss()
 
+    if not torch.cuda.is_available():
+        device = torch.device('cpu')
+    else:
+        device = torch.device('cuda')
+    nn_model.to(device)
+
     def func(img_batch):
         feature = nn_model.forward(img_batch)[:, layer_index, :, :]
         return -torch.sum(feature) + 0.00001 * tvloss(img_batch)
