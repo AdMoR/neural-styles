@@ -32,7 +32,7 @@ bash install_pydiffvg.sh
 
 ## :gem: Some results :gem:
 
-#### Classical neuron excitation
+#### Classical neuron excitation :accept:
 Some result on channel excitation `L[:, c, :, :]`: 
 
 On AlexNet, last convolution layer : 
@@ -54,15 +54,15 @@ On ResNet18, fourth residual block :
 ![Example channel excitation5](images/resnet18_3-LayerExcitationLoss70+BatchDiversity-4-0.001-100-1024-1.jpg)
 
 
-#### SVG neuron excitation
+#### SVG neuron excitation :pencil2:
 
-B&W neuron optimization with lines only
+B&W neuron optimization with lines only :penguin:
 
 ![Example neuron excitation svg](images/svg_neur_exc/result_n_paths200_im_size224_n_steps500_layer_nameVGGLayers.Conv4_3_layer_index1.svg)
 ![Example neuron oexcitation svg 2](images/svg_neur_exc/result_n_paths200_im_size224_n_steps500_layer_nameVGGLayers.Conv4_3_layer_index2.svg)
 
 
-Color neuron optimization with lines only
+Color neuron optimization with lines only :rainbow:
 
 ![Example neuron excitation color svg](images/result_n_paths400_im_size224_n_steps1500_layer_nameVGGLayers.Conv4_3_layer_index5.svg)
 ![Example neuron excitation color svg 2](
