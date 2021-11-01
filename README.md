@@ -55,5 +55,18 @@ On ResNet18, fourth residual block :
 
 
 #### SVG neuron excitation
+
+B&W neuron optimization with lines only
+
 ![Example neuron excitation svg](images/svg_neur_exc/result_n_paths200_im_size224_n_steps500_layer_nameVGGLayers.Conv4_3_layer_index1.svg)
 ![Example neuron oexcitation svg 2](images/svg_neur_exc/result_n_paths200_im_size224_n_steps500_layer_nameVGGLayers.Conv4_3_layer_index2.svg)
+
+
+Color neuron optimization with lines only
+
+![Example neuron excitation color svg](images/result_n_paths400_im_size224_n_steps1500_layer_nameVGGLayers.Conv4_3_layer_index5.svg)
+![Example neuron excitation color svg 2](
+images/result_n_paths400_im_size224_n_steps1500_layer_nameVGGLayers.Conv4_3_layer_index2.svg)
+
+
+
