@@ -5,6 +5,7 @@ import random
 import os
 import torchvision.transforms as transforms
 from typing import NamedTuple, Dict, Any, List, Callable
+from svg_optim.path_helpers import build_random_path
 import clip
 
 
@@ -47,10 +48,6 @@ class CurveOptimizer(NamedTuple):
         # In the CLIPDraw code used to generate examples, we don't normalize images
         # before passing into CLIP, but really you should. Turn this to True to do that.
         use_normalized_clip = True
-
-        # Define color palette
-        colors = dict([("black", (0, 0, 0, 1))])
-
         pydiffvg.set_print_timing(False)
         gamma = 1.0
 
@@ -87,20 +84,20 @@ class CurveOptimizer(NamedTuple):
 
         # Optimizers
         points_optim = torch.optim.Adam(points_vars, lr=1.0)
-        color_optim = torch.optim.Adam(color_vars, lr=0.5)
-        stroke_optim = torch.optim.Adam(stroke_vars, lr=0.5)
+        color_optim = torch.optim.Adam(color_vars, lr=0.1)
+        stroke_optim = torch.optim.Adam(stroke_vars, lr=0.01)
 
         # Run the main optimization loop
-        all_groups = [g.param_groups for g in [points_optim, color_optim, stroke_optim]]
+        #all_groups = sum([g.param_groups for g in [points_optim, color_optim, stroke_optim]], [])
         for t in range(self.num_iter):
             # Anneal learning rate (makes videos look cleaner)
             if t == int(self.num_iter * 0.5):
                 print(f"Iter {t}")
-                for g in all_groups:
+                for g in points_optim.param_groups:
                     g['lr'] *= 0.5
             if t == int(self.num_iter * 0.75):
                 print(f"Iter {t}")
-                for g in all_groups:
+                for g in points_optim.param_groups:
                     g['lr'] *= 0.5
 
             points_optim.zero_grad()
@@ -113,8 +110,6 @@ class CurveOptimizer(NamedTuple):
             img = self.gen_image_from_curves(t, shapes, shape_groups, gamma, background_image)
             im_batch = self.data_augment(img, NUM_AUGS, use_normalized_clip)
             loss = self.forward_model_func(im_batch)
-            #image_features, text_features, text_features_neg1, text_features_neg2 = \
-            #    self.model_forward(im_batch, NUM_AUGS, text_features, text_features_neg1, text_features_neg2)
 
             # Back-propagate the gradients.
             loss.backward()
@@ -137,6 +132,8 @@ class CurveOptimizer(NamedTuple):
         scene_args = pydiffvg.RenderFunction.serialize_scene( \
             self.canvas_width, self.canvas_height, shapes, shape_groups)
         img = render(self.canvas_width, self.canvas_height, 2, 2, t, background_image, *scene_args)
+        img = img[:, :, 3:4] * img[:, :, :3] + torch.ones(img.shape[0], img.shape[1], 3,
+                                                          device=pydiffvg.get_device()) * (1 - img[:, :, 3:4])
         img = img[:, :, :3]
 
         dir_ = "./gens/"
@@ -191,24 +188,7 @@ class Generator(NamedTuple):
             shape_groups = []
             for i in range(self.num_paths):
                 num_segments = random.randint(1, 3)
-                num_control_points = torch.zeros(num_segments, dtype=torch.int32) + 2
-                points = []
-                p0 = (random.random(), random.random())
-                points.append(p0)
-                for j in range(num_segments):
-                    radius = 0.1
-                    p1 = (p0[0] + radius * (random.random() - 0.5), p0[1] + radius * (random.random() - 0.5))
-                    p2 = (p1[0] + radius * (random.random() - 0.5), p1[1] + radius * (random.random() - 0.5))
-                    p3 = (p2[0] + radius * (random.random() - 0.5), p2[1] + radius * (random.random() - 0.5))
-                    points.append(p1)
-                    points.append(p2)
-                    points.append(p3)
-                    p0 = p3
-                points = torch.tensor(points)
-                points[:, 0] *= self.canvas_width
-                points[:, 1] *= self.canvas_height
-                path = pydiffvg.Path(num_control_points=num_control_points, points=points,
-                                     stroke_width=torch.tensor(1.0), is_closed=False)
+                path = build_random_path(num_segments, self.canvas_width, self.canvas_height)
                 shapes.append(path)
                 path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]), fill_color=None,
                                                  stroke_color=torch.tensor(self.stroke_color))
@@ -227,3 +207,40 @@ class LoadedSvgGen(NamedTuple):
 
         return gen
 
+
+class PathAndFormGenerator(NamedTuple):
+    num_paths: int
+    n_forms: int
+    canvas_width: int
+    canvas_height: int
+    allow_color: bool = False
+    allow_alpha: bool = False
+
+    @property
+    def stroke_color(self):
+        alpha = 1. if not self.allow_alpha else random.random()
+        if self.allow_color:
+            return random.random(), random.random(), random.random(), alpha
+        else:
+            return 0., 0., 0., alpha
+
+    def gen_func(self):
+        def setup_parameters(*args, **kwargs):
+            shapes = []
+            shape_groups = []
+            for i in range(self.num_paths):
+                num_segments = random.randint(1, 3)
+                path = path_helpers.build_random_path(num_segments)
+                shapes.append(path)
+                path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]), fill_color=None,
+                                                 stroke_color=torch.tensor(self.stroke_color))
+                shape_groups.append(path_group)
+            for i in range(self.n_forms):
+                num_segments = 10
+                path = path_helpers.build_random_path(num_segments)
+                shapes.append(path)
+                path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]), fill_color=torch.tensor(self.stroke_color),
+                                                 stroke_color=torch.tensor(self.stroke_color))
+                shape_groups.append(path_group)
+            return shapes, shape_groups
+        return setup_parameters

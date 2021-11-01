@@ -4,21 +4,29 @@ from typing import NamedTuple, Dict, Any, List, Callable
 import clip
 
 
+if not torch.cuda.is_available():
+    device = torch.device('cpu')
+else:
+    device = torch.device('cuda')
+
+
 class ClipForwardFunc(NamedTuple):
 
     model: Any
     NUM_AUGS: int
-    text_input: torch.Tensor
-    text_input_neg1: torch.Tensor
-    text_input_neg2: torch.Tensor
-
+    text_input: str
+    text_input_neg1: str = "many messy drawings"
+    text_input_neg2: str = "scribbles"
 
     def gen_func(self):
         # Calculate features
+        def to_tensor(txt):
+            return clip.tokenize(txt).to(device)
+
         with torch.no_grad():
-            text_features = self.model.encode_text(self.text_input)
-            text_features_neg1 = self.model.encode_text(self.text_input_neg1)
-            text_features_neg2 = self.model.encode_text(self.text_input_neg2)
+            text_features = self.model.encode_text(to_tensor(self.text_input))
+            text_features_neg1 = self.model.encode_text(to_tensor(self.text_input_neg1))
+            text_features_neg2 = self.model.encode_text(to_tensor(self.text_input_neg2))
 
         def model_forward(im_batch):
             use_negative = True
