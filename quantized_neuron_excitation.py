@@ -45,13 +45,14 @@ class PaletteImage(torch.nn.Module):
         class_matrix : H x W x N_COLOR
         class_colors : N_COLOR x 3
         """
-        H, W, n_col = class_matrix
-        out = torch.zeros((H, W, 3))
-        softmax_index = torch.argmax(pal_im.class_matrix, dim=2)
+        out = torch.zeros((512, 512, 3))
 
-        for i in range(H):
-          for j in range(W):
-            out[i, j, :] = pal_im.class_colors[softmax_index[i, j], :]
+        colors = torch.sigmoid(self.class_colors)
+        softmax_index = torch.argmax(self.class_matrix, dim=2)
+
+        for i in range(512):
+            for j in range(512):
+                out[i, j, :] = colors[softmax_index[i, j], :]
 
         return out
 

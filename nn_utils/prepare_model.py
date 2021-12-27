@@ -8,14 +8,27 @@ from nn_utils.relu_override import replace_relu_with_leaky, override_gradient_re
     VisuRelu6, recursive_relu_replace
 
 
-class VGGLayers(Enum):
-    Conv1_2 = "conv_1_2"
-    Conv2_2 = "conv_2_2"
-    Conv3_3 = "conv_3_3"
-    Conv4_3 = "conv_4_3"
-    Conv5_1 = "conv_5_1"
-    Conv5_2 = "conv_5_2"
-    Conv5_3 = "conv_5_3"
+class VGG19Layers(Enum):
+    Conv1_2 = 3
+    Conv2_2 = 8
+    Conv3_3 = 14
+    Conv3_4 = 16
+    Conv4_3 = 23
+    Conv4_4 = 25
+    Conv5_1 = 28
+    Conv5_2 = 30
+    Conv5_3 = 32
+    Conv5_4 = 34
+
+
+class VGG16Layers(Enum):
+    Conv1_2 = 3
+    Conv2_2 = 8
+    Conv3_3 = 14
+    Conv4_3 = 21
+    Conv5_1 = 24
+    Conv5_2 = 26
+    Conv5_3 = 28
 
 
 def load_alexnet(layer_index, *args):
@@ -62,20 +75,10 @@ def load_vgg_16(layer_name, image_size=500, *args):
     replace_relu_with_leaky(modules, ramp=0.1)
 
     max_layer = -1
-    if layer_name == VGGLayers.Conv1_2:
-        max_layer = 3
-    elif layer_name == VGGLayers.Conv2_2:
-        max_layer = 8
-    elif layer_name == VGGLayers.Conv3_3:
-        max_layer = 15
-    elif layer_name == VGGLayers.Conv4_3:
-        max_layer = 22
-    elif layer_name == VGGLayers.Conv5_1:
-        max_layer = 25
-    elif layer_name == VGGLayers.Conv5_2:
-        max_layer = 27
-    elif layer_name == VGGLayers.Conv5_3:
-        max_layer = 29
+    if layer_name not in list(VGG16Layers):
+        raise Exception("Invalid laye name")
+    else:
+        max_layer = int(layer_name)
     nn_model = nn.Sequential(vgg.features[0:max_layer])
 
     if layer_name == -1:
@@ -84,11 +87,17 @@ def load_vgg_16(layer_name, image_size=500, *args):
         return "vgg16_{}".format(layer_name), build_subsampler(image_size), nn_model
 
 
-def load_vgg_19(layer_index):
+def load_vgg_19(layer_name, layer_index):
     nn_model = models.vgg19(pretrained=True).eval()
     modules = list(nn_model.children())
-    print(">>>>>>>>>")
     replace_relu_with_leaky(modules, ramp=0.1)
-    print(modules)
-    return "vgg19_{}".format(layer_index), build_subsampler(224), modules[0]
+
+    max_layer = -1
+    if layer_name not in list(VGG19Layers):
+        raise Exception("Invalid laye name")
+    else:
+        max_layer = int(layer_name)
+    nn_model = nn.Sequential(modules[0][0:max_layer])
+
+    return "vgg19_{}".format(layer_index), build_subsampler(224), nn_model
 
