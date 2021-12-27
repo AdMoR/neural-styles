@@ -41,7 +41,7 @@ class CurveOptimizer(NamedTuple):
     generator_func: Callable
     forward_model_func: Callable
 
-    def gen_and_optimize(self, color_optimisation_activated=False):
+    def gen_and_optimize(self, writer=None, color_optimisation_activated=False):
 
         # Thanks to Katherine Crowson for this.
         # In the CLIPDraw code used to generate examples, we don't normalize images
@@ -123,6 +123,9 @@ class CurveOptimizer(NamedTuple):
                 path.stroke_width.data.clamp_(1.0, max_width)
             for group in shape_groups:
                 group.stroke_color.data.clamp_(0.0, 1.0)
+
+            if t % int(self.num_iter / 10) == 0 and writer is not None:
+              writer.add_image('Rendering', img[0], t)
 
         return shapes, shape_groups
 
@@ -229,14 +232,14 @@ class PathAndFormGenerator(NamedTuple):
             shape_groups = []
             for i in range(self.num_paths):
                 num_segments = random.randint(1, 3)
-                path = path_helpers.build_random_path(num_segments)
+                path = build_random_path(num_segments)
                 shapes.append(path)
                 path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]), fill_color=None,
                                                  stroke_color=torch.tensor(self.stroke_color))
                 shape_groups.append(path_group)
             for i in range(self.n_forms):
                 num_segments = 10
-                path = path_helpers.build_random_path(num_segments)
+                path = build_random_path(num_segments)
                 shapes.append(path)
                 path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]), fill_color=torch.tensor(self.stroke_color),
                                                  stroke_color=torch.tensor(self.stroke_color))
