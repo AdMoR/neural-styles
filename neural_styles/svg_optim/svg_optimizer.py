@@ -5,7 +5,7 @@ import random
 import os
 import torchvision.transforms as transforms
 from typing import NamedTuple, Any, List, Callable
-from neural_styles.svg_optim import build_random_path
+from neural_styles.svg_optim.path_helpers import build_random_path
 
 
 class ColorGroup(NamedTuple):

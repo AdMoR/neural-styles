@@ -2,14 +2,14 @@ import argparse
 
 import pydiffvg
 
-from svg_optim.excitation_forward_func import gen_vgg16_excitation_func
-from svg_optim.svg_optimizer import CurveOptimizer, Generator
-from nn_utils.prepare_model import VGGLayers
+from neural_styles.svg_optim.excitation_forward_func import gen_vgg16_excitation_func
+from neural_styles.svg_optim.svg_optimizer import CurveOptimizer, Generator
+from neural_styles.nn_utils.prepare_model import VGG16Layers
 from tensorboardX import SummaryWriter
 
 p = argparse.ArgumentParser()
 p.add_argument("--layer_index", required=True, type=int)
-p.add_argument("--layer_name", default=VGGLayers.Conv5_3, type=VGGLayers, choices=list(VGGLayers))
+p.add_argument("--layer_name", default=VGG16Layers.Conv5_3, type=VGG16Layers, choices=list(VGG16Layers))
 p.add_argument("--n_paths", default=800, type=int)
 p.add_argument("--imsize", default=500, type=int)
 p.add_argument("--n_steps", default=1200, type=int)

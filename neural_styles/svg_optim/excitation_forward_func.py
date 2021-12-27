@@ -3,8 +3,8 @@ import torchvision.transforms as transforms
 from PIL import Image
 import pydiffvg
 
-from neural_styles.nn_utils.prepare_model import load_vgg_16, VGGLayers
-from neural_styles.nn_utils import TVLoss
+from neural_styles.nn_utils.prepare_model import load_vgg_16, VGG16Layers
+from neural_styles.nn_utils.regularization_losses import TVLoss
 
 
 def gen_vgg16_excitation_func(layer_name, layer_index):
@@ -25,7 +25,7 @@ def gen_vgg16_excitation_func(layer_name, layer_index):
 
 
 def gen_vgg16_mimick(img_path):
-    name, _, nn_model = load_vgg_16(VGGLayers.Conv5_3)
+    name, _, nn_model = load_vgg_16(VGG16Layers.Conv5_3)
     nn_model.requires_grad = False
     tvloss = TVLoss()
 
