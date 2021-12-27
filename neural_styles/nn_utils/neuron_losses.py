@@ -2,10 +2,8 @@ import urllib, os
 from torch import nn
 import torch
 
-from image_utils.decorelation import to_valid_rgb, build_freq_img, freq_to_rgb
-from image_utils.data_augmentation import image_scaling, scale
-
-from .regularization_losses import gram_matrix
+from neural_styles.image_utils.decorelation import build_freq_img, freq_to_rgb
+from neural_styles.image_utils.data_augmentation import scale
 
 
 class CenteredNeuronExcitationLoss(nn.Module):

@@ -1,8 +1,7 @@
-import torch
 import torchvision
 from torch import nn
 
-from nn_utils.relu_override import recursive_relu_replace
+from neural_styles.nn_utils.relu_override import recursive_relu_replace
 
 
 class StyleResNet18(nn.Module):

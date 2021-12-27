@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import torch
 
-from nn_utils.neuron_losses import TVLoss
+from neural_styles.nn_utils.neuron_losses import TVLoss
 
 
 class TestTVLoss(TestCase):

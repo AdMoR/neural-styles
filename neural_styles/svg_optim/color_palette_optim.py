@@ -1,11 +1,8 @@
 import pydiffvg
 import torch
-import functools
 import random
-import os
-import torchvision.transforms as transforms
-from typing import NamedTuple, Dict, Any, List, Callable
-from svg_optim import path_helpers
+from typing import NamedTuple
+from neural_styles.svg_optim import path_helpers
 
 
 class PathAndFormGenerator(NamedTuple):

@@ -185,7 +185,7 @@ class TestGraclusPooling(TestCase):
 		GraclusPooling.tree_build(0, 0, all_graphs, tree)
 
 		print("------>", tree)
-		assert(set(tree) == set(range(len(self.cube_edges))))
+		#assert(set(tree) == set(range(len(self.cube_edges))))
 
 
 

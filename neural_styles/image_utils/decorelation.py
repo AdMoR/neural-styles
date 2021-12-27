@@ -17,7 +17,8 @@ color_mean = torch.from_numpy(np.asarray([0.48, 0.46, 0.41])).float()
 
 def freq_to_rgb(spectrum_var, h, w, ch=3, decay_power=1, decorrelate=True):
     spectrum_var = normalise(spectrum_var, h, w, decay_power)
-    img = torch.irfft(spectrum_var, 3)
+    print("===> ", spectrum_var.shape)
+    img = torch.fft.irfft(spectrum_var, 3)
     rgb_img = img[:, :ch, :h, :w]
     rgb_img = to_valid_rgb(rgb_img, decorrelate=decorrelate)
 
@@ -28,7 +29,7 @@ def freq_to_rgba(spectrum_var, h, w, ch=4, decay_power=1, decorrelate=True):
     rgb_spec = spectrum_var[:, :, :3, :, :]
     print(rgb_spec.shape)
     pre_img = normalise(rgb_spec, h, w, decay_power)
-    img = torch.irfft(pre_img, 3)
+    img = torch.fft.irfft(pre_img, 3)
 
     rgb_img = img[:, :3, :h, :w]
     rgb_img = to_valid_rgb(rgb_img, decorrelate=decorrelate)
@@ -38,7 +39,7 @@ def freq_to_rgba(spectrum_var, h, w, ch=4, decay_power=1, decorrelate=True):
     pre_mask = spectrum_var[:, :, 3:, :, :]
     print(pre_mask.shape)
     mask_var = normalise(pre_mask, h, w, decay_power)
-    mask =  to_valid_rgb(torch.irfft(mask_var, 3), decorrelate=False)[:, :, :h, :w]
+    mask =  to_valid_rgb(torch.fft.irfft(mask_var, 3), decorrelate=False)[:, :, :h, :w]
 
     print("mask ", torch.mean(mask), torch.max(mask))
 
@@ -65,7 +66,7 @@ def _linear_decorelate_color(t):
   to map back to normal colors is multiply the square root of your color
   correlations.
   """
-  B, C, H, W = t.shape
+  print("shape ---> ", t.shape)
   # check that inner dimension is 3?
   t_flat = t.permute(0, 2, 3, 1)
   color_correlation_normalized = color_correlation_svd_sqrt / max_norm_svd_sqrt
@@ -99,7 +100,7 @@ def to_valid_rgb(t, decorrelate=True, sigmoid=True):
     for i in range(3):
         t[i, :, :] += color_mean[i].cuda()
   if sigmoid:
-    return torch.nn.functional.sigmoid(t)
+    return torch.sigmoid(t)
   else:
     return (2 * t - 1) / 2 + 0.5
 

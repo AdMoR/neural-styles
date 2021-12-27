@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import torch
 
-from image_utils.data_augmentation import image_scaling
+from neural_styles.image_utils import image_scaling
 
 
 class TestScaling(TestCase):

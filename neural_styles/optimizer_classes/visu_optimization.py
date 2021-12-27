@@ -3,16 +3,15 @@ import functools
 import PIL
 import torch
 import torchvision.utils as vutils
-from torchvision import transforms
+import numpy as np
 from tensorboardX import SummaryWriter
 
-from nn_utils.regularization_losses import TVLoss, ImageNorm
-from image_utils.decorelation import freq_to_rgb
-from image_utils.normalisation import Normalization
+from neural_styles.nn_utils.regularization_losses import TVLoss, ImageNorm
+from neural_styles.image_utils.decorelation import freq_to_rgb
 
 
 def imshow(a, fmt='jpeg'):
-    try
+    try:
         display(Image(data=imencode(a, fmt)))
     except Exception:
         pass
@@ -88,6 +87,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         def logging_step(writer=None):
             def closure():
                 optim.zero_grad()
+                print("----> ", freq.shape, image_size)
                 noise = freq_to_rgb(freq[:, :, :3, :, :], image_size, image_size)
 
                 B, C, H, W = noise.shape

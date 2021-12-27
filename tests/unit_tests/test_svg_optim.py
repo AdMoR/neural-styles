@@ -2,8 +2,8 @@ from unittest import TestCase
 
 import torch
 
-from svg_optim.svg_optimizer import CurveOptimizer, Generator
-from svg_optim.excitation_forward_func import gen_vgg16_excitation_func, gen_vgg16_mimick
+from neural_styles.svg_optim import CurveOptimizer, Generator
+from neural_styles.svg_optim import gen_vgg16_excitation_func, gen_vgg16_mimick
 
 
 class TestCurveOptimizer(TestCase):
@@ -27,5 +27,5 @@ class TestCurveOptimizer(TestCase):
         optimizer.gen_and_optimize()
 
     def test_with_vgg_mimick(self):
-        optimizer = CurveOptimizer(10, 224, 224, self.gen.gen_func(), gen_vgg16_mimick("/Users/amorvan/Documents/code_dw/neural-styles/report/imgs/alexnet_0:LayerExcitationLoss100:4:0.0025:10:4096.jpg"))
+        optimizer = CurveOptimizer(10, 224, 224, self.gen.gen_func(), gen_vgg16_mimick("/Users/amorvan/Documents/code_dw/neural-neural_styles/report/imgs/alexnet_0:LayerExcitationLoss100:4:0.0025:10:4096.jpg"))
         optimizer.gen_and_optimize()

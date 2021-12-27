@@ -2,12 +2,11 @@ import functools
 
 import torch
 import torchvision.utils as vutils
-from torchvision import transforms
 from tensorboardX import SummaryWriter
 
-from nn_utils.regularization_losses import TVLoss, ImageNorm
-from image_utils.decorelation import freq_to_rgb
-from image_utils.normalisation import Normalization
+from neural_styles.nn_utils import TVLoss, ImageNorm
+from neural_styles.image_utils import freq_to_rgb
+from neural_styles.image_utils import Normalization
 
 
 class StyleImageVisualizer(torch.nn.Module):

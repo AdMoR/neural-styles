@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
-from nn_utils.relu_override import VisuRelu6
-
 
 __all__ = ['Inception3', 'inception_v3']
 

@@ -2,10 +2,9 @@ from enum import Enum
 
 from torch import nn
 from torchvision import models
-from image_utils.data_augmentation import build_subsampler
-from nn_utils.adapted_networks import StyleResNet18
-from nn_utils.relu_override import replace_relu_with_leaky, override_gradient_relu, delete_relu, \
-    VisuRelu6, recursive_relu_replace
+from neural_styles.image_utils.data_augmentation import build_subsampler
+from neural_styles.nn_utils.adapted_networks import StyleResNet18
+from neural_styles.nn_utils.relu_override import replace_relu_with_leaky, recursive_relu_replace
 
 
 class VGG19Layers(Enum):
@@ -44,7 +43,7 @@ def load_alexnet(layer_index, *args):
 
 
 def load_inception_v3(layer_index):
-    from nn_utils.modified_inception import inception_v3, BasicConv2d
+    from neural_styles.nn_utils.modified_inception import inception_v3, BasicConv2d
     BasicConv2d.my_func = nn.LeakyReLU(0.1)
     nn_model = inception_v3(pretrained=True)
     nn_model.training = False
@@ -78,7 +77,7 @@ def load_vgg_16(layer_name, image_size=500, *args):
     if layer_name not in list(VGG16Layers):
         raise Exception("Invalid laye name")
     else:
-        max_layer = int(layer_name)
+        max_layer = layer_name.value
     nn_model = nn.Sequential(vgg.features[0:max_layer])
 
     if layer_name == -1:

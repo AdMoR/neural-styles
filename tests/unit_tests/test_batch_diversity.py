@@ -3,7 +3,7 @@ from unittest import TestCase
 import torch
 import torchvision
 
-from nn_utils.regularization_losses import BatchDiversity
+from neural_styles.nn_utils import BatchDiversity
 
 
 class TestBatchDiversity(TestCase):

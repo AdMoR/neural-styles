@@ -3,8 +3,8 @@ import torchvision.transforms as transforms
 from PIL import Image
 import pydiffvg
 
-from nn_utils.prepare_model import load_vgg_16, VGGLayers
-from nn_utils.regularization_losses import TVLoss
+from neural_styles.nn_utils.prepare_model import load_vgg_16, VGGLayers
+from neural_styles.nn_utils import TVLoss
 
 
 def gen_vgg16_excitation_func(layer_name, layer_index):
