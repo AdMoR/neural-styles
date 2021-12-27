@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import torch
 
-from neural_styles.nn_utils import StyleResNet18
+from neural_styles.nn_utils.adapted_networks import StyleResNet18
 
 
 class TestStyleNet(TestCase):

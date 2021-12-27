@@ -16,10 +16,12 @@ color_mean = torch.from_numpy(np.asarray([0.48, 0.46, 0.41])).float()
 
 
 def freq_to_rgb(spectrum_var, h, w, ch=3, decay_power=1, decorrelate=True):
+    print("----> ", spectrum_var.shape, h, w)
     spectrum_var = normalise(spectrum_var, h, w, decay_power)
     print("===> ", spectrum_var.shape)
-    img = torch.fft.irfft(spectrum_var, 3)
-    rgb_img = img[:, :ch, :h, :w]
+    img = torch.fft.irfft(spectrum_var, dim=-1)
+    print("-===> ", img.shape)
+    rgb_img = img[:, :ch, :h, :w, 0]
     rgb_img = to_valid_rgb(rgb_img, decorrelate=decorrelate)
 
     return rgb_img

@@ -65,7 +65,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
     def forward(self, noise_image, debug=False, mask=None):
         # Get the right layer features
         noise_image = self.subsampler(noise_image)
-        noise_image = self.losses[0].prepare_rgb_img(noise_image, mask)
+        #noise_image = self.losses[0].prepare_rgb_img(noise_image)
         feature = self.feature_layer.forward(noise_image)
         loss = sum([loss(feature) for loss in self.losses])
 
@@ -87,7 +87,6 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         def logging_step(writer=None):
             def closure():
                 optim.zero_grad()
-                print("----> ", freq.shape, image_size)
                 noise = freq_to_rgb(freq[:, :, :3, :, :], image_size, image_size)
 
                 B, C, H, W = noise.shape
@@ -103,7 +102,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
                     writer.add_scalars("neuron_excitation/" + self.name, {"loss": loss}, i)
                 if debug:
                     #print(torch.max(freq), torch.min(freq), torch.max(noise), torch.min(noise))
-                    viz = vutils.make_grid(noise * self.losses[0].mask)
+                    viz = vutils.make_grid(noise)
                     viz = torch.clamp(viz, 0, 0.999999)
                     if writer:
                         writer.add_image('visu/' + self.name, viz, i)
