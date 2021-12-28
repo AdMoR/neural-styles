@@ -2,10 +2,9 @@ import argparse
 
 import pydiffvg
 
-from svg_optim.clip_forward_func import ClipForwardFunc
-from svg_optim.helpers import model
-from svg_optim.svg_optimizer import CurveOptimizer, Generator
-from nn_utils.prepare_model import VGGLayers
+from neural_styles.svg_optim.clip_forward_func import ClipForwardFunc
+from neural_styles.svg_optim.helpers import model
+from neural_styles.svg_optim.svg_optimizer import CurveOptimizer, Generator
 from tensorboardX import SummaryWriter
 
 p = argparse.ArgumentParser()
@@ -21,7 +20,7 @@ def run(n_paths, im_size, n_steps, prompt):
 
     with SummaryWriter(log_dir=f"./logs/{name}", comment=name) as writer:
         gen = Generator(n_paths, im_size, im_size, allow_color=True)
-        fn = ClipForwardFunc(model, 4, "a boat on the see").gen_func()
+        fn = ClipForwardFunc(model, 4, "a boat on the sea").gen_func()
         optimizer = CurveOptimizer(n_steps, im_size, im_size, gen.gen_func(), fn)
         shapes, shape_groups = optimizer.gen_and_optimize(writer, color_optimisation_activated=True)
         pydiffvg.save_svg(name + ".svg", im_size, im_size, shapes, shape_groups)

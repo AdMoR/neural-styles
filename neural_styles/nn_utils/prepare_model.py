@@ -18,6 +18,8 @@ class VGG19Layers(Enum):
     Conv5_2 = 30
     Conv5_3 = 32
     Conv5_4 = 34
+    def __repr__(self):
+        return str(self)
 
 
 class VGG16Layers(Enum):
@@ -28,6 +30,19 @@ class VGG16Layers(Enum):
     Conv5_1 = 24
     Conv5_2 = 26
     Conv5_3 = 28
+
+    def __repr__(self):
+        return str(self)
+
+
+class ResNet18Layers(Enum):
+    Block1 = 5
+    Block2 = 6
+    Block3 = 7
+    Block4 = 8
+
+    def __repr__(self):
+        return str(self)
 
 
 def load_alexnet(layer_index, *args):
@@ -50,17 +65,18 @@ def load_inception_v3(layer_index):
     return "inceptionv3_{}".format(layer_index), build_subsampler(299), nn_model
 
 
-def load_resnet_18(layer_index, image_size=500):
+def load_resnet_18(layer_name, image_size=500):
     resnet = models.resnet18(pretrained=True).eval()
     nn_model = list(resnet.children())
     nn_model = recursive_relu_replace(nn_model)
 
-    if layer_index >= 6:
-        module = resnet
+    max_layer = -1
+    if layer_name not in list(VGG16Layers):
+        raise Exception("Invalid laye name")
     else:
-        module = nn.Sequential(*nn_model[0: 4 + layer_index])
+        max_layer = layer_name.value
 
-    return "resnet18_{}".format(layer_index), build_subsampler(image_size), module
+    return "resnet18_{}".format(layer_name), build_subsampler(image_size), nn_model[0: max_layer]
 
 
 def load_style_resnet_18(layers, image_size=500):
@@ -99,4 +115,3 @@ def load_vgg_19(layer_name, layer_index):
     nn_model = nn.Sequential(modules[0][0:max_layer])
 
     return "vgg19_{}".format(layer_index), build_subsampler(224), nn_model
-

@@ -3,12 +3,20 @@ import torchvision.transforms as transforms
 from PIL import Image
 import pydiffvg
 
-from neural_styles.nn_utils.prepare_model import load_vgg_16, VGG16Layers
+from neural_styles.nn_utils.prepare_model import load_vgg_16, load_vgg_19, load_resnet_18, \
+    VGG16Layers, VGG19Layers, ResNet18Layers
 from neural_styles.nn_utils.regularization_losses import TVLoss
 
 
 def gen_vgg16_excitation_func(layer_name, layer_index):
-    name, _, nn_model = load_vgg_16(layer_name)
+    if layer_name in VGG16Layers:
+        name, _, nn_model = load_vgg_16(layer_name)
+    elif layer_name in VGG19Layers:
+        name, _, nn_model = load_vgg_19(layer_name)
+    elif layer_name in ResNet18Layers:
+        name, _, nn_model = load_resnet_18(layer_name)
+    else:
+        raise Exception("Invalid layer name")
     tvloss = TVLoss()
 
     if not torch.cuda.is_available():
