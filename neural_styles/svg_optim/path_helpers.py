@@ -1,3 +1,4 @@
+import copy
 import torch
 import random
 import pydiffvg
@@ -23,3 +24,11 @@ def build_random_path(num_segments, canvas_width, canvas_height):
     path = pydiffvg.Path(num_control_points=num_control_points, points=points,
                          stroke_width=torch.tensor(1.0), is_closed=False)
     return path
+
+
+def build_translated_path(path, dx, dy):
+    pts = copy.deepcopy(path.points)
+    pts[:, 0] += dx
+    pts[:, 1] += dy
+    return pydiffvg.Path(num_control_points=path.num_control_points, points=pts,
+                         stroke_width=path.stroke_width, is_closed=False)

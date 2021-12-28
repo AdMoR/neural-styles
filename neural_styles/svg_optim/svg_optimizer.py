@@ -5,7 +5,7 @@ import random
 import os
 import torchvision.transforms as transforms
 from typing import NamedTuple, Any, List, Callable
-from neural_styles.svg_optim.path_helpers import build_random_path
+from neural_styles.svg_optim.path_helpers import build_random_path, build_translated_path
 
 
 class ColorGroup(NamedTuple):
@@ -199,13 +199,30 @@ class Generator(NamedTuple):
         return setup_parameters
 
 
-class LoadedSvgGen(NamedTuple):
-    shapes: int
-    shape_groups: int
+class ScaledSvgGen(NamedTuple):
+    input_path: str
+    multiplier_x: int
+    multiplier_y: int
+
+    @property
+    def stroke_color(self):
+        return 0., 0., 0., 1
 
     def gen_func(self):
+        canvas_width, canvas_height, shapes, shape_groups = pydiffvg.svg_to_scene(self.input_path)
+        new_shapes = list()
+        new_groups = list()
+        for dx in range(0, self.multiplier_x):
+            for dy in range(0, self.multiplier_y):
+                for i in range(len(shapes)):
+                    new_shape = build_translated_path(shapes[i], dx * canvas_width, dy * canvas_height)
+                    new_shapes.append(new_shape)
+                    path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(new_shapes) - 1]), fill_color=None,
+                                                     stroke_color=torch.tensor(self.stroke_color))
+                    new_groups.append(path_group)
+
         def gen():
-            return self.shapes, self.shape_groups
+            return new_shapes, new_groups
 
         return gen
 
