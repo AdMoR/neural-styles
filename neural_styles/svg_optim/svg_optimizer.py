@@ -41,6 +41,8 @@ class CurveOptimizer(NamedTuple):
     generator_func: Callable
     forward_model_func: Callable
 
+    scale: tuple = (0.1, 0.25)
+
     def gen_and_optimize(self, writer=None, color_optimisation_activated=False):
 
         # Thanks to Katherine Crowson for this.
@@ -153,13 +155,13 @@ class CurveOptimizer(NamedTuple):
         # Image Augmentation Transformation
         augment_trans = transforms.Compose([
             transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
-            transforms.RandomResizedCrop(224, scale=(0.1, 0.9)),
+            transforms.RandomResizedCrop(224, scale=self.scale),
         ])
 
         if use_normalized_clip:
             augment_trans = transforms.Compose([
                 transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
-                transforms.RandomResizedCrop(224, scale=(0.1, 0.9)),
+                transforms.RandomResizedCrop(224, scale=self.scale),
                 transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
             ])
         img_augs = []
