@@ -126,7 +126,8 @@ class CurveOptimizer(NamedTuple):
                 group.stroke_color.data.clamp_(0.0, 1.0)
 
             if t % int(self.num_iter / 10) == 0 and writer is not None:
-              writer.add_image('Rendering', img[0], t)
+                writer.add_scalars("neuron_excitation", {"loss": loss}, t)
+                writer.add_image('Rendering', img[0], t)
 
         return shapes, shape_groups
 
