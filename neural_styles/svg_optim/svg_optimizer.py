@@ -41,7 +41,8 @@ class CurveOptimizer(NamedTuple):
     generator_func: Callable
     forward_model_func: Callable
 
-    scale: tuple = (0.1, 0.25)
+    scale: tuple = (0.5, 0.9)  # Use smaller number of large image, st resize is not too extreme
+    n_augms: int = 4  # Should probably be proportional t the image size
 
     def gen_and_optimize(self, writer=None, color_optimisation_activated=False):
 
@@ -106,10 +107,8 @@ class CurveOptimizer(NamedTuple):
                 color_optim.zero_grad()
                 stroke_optim.zero_grad()
 
-            NUM_AUGS = 4
-
             img = self.gen_image_from_curves(t, shapes, shape_groups, gamma, background_image)
-            im_batch = self.data_augment(img, NUM_AUGS, use_normalized_clip)
+            im_batch = self.data_augment(img, self.n_augms, use_normalized_clip)
             loss = self.forward_model_func(im_batch)
 
             # Back-propagate the gradients.
