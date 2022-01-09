@@ -71,8 +71,8 @@ def load_resnet_18(layer_name, image_size=500):
     nn_model = recursive_relu_replace(nn_model)
 
     max_layer = -1
-    if layer_name not in list(VGG16Layers):
-        raise Exception("Invalid laye name")
+    if layer_name not in list(ResNet18Layers):
+        raise Exception("Invalid layer name")
     else:
         max_layer = layer_name.value
 
@@ -91,7 +91,7 @@ def load_vgg_16(layer_name, image_size=500, *args):
 
     max_layer = -1
     if layer_name not in list(VGG16Layers):
-        raise Exception("Invalid laye name")
+        raise Exception("Invalid layer name")
     else:
         max_layer = layer_name.value
     nn_model = nn.Sequential(vgg.features[0:max_layer])
@@ -109,9 +109,9 @@ def load_vgg_19(layer_name, layer_index):
 
     max_layer = -1
     if layer_name not in list(VGG19Layers):
-        raise Exception("Invalid laye name")
+        raise Exception("Invalid layer name")
     else:
-        max_layer = int(layer_name)
+        max_layer = layer_name.value
     nn_model = nn.Sequential(modules[0][0:max_layer])
 
     return "vgg19_{}".format(layer_index), build_subsampler(224), nn_model
