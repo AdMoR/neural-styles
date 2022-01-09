@@ -12,7 +12,7 @@ def gen_vgg16_excitation_func(layer_name, layer_index):
     if layer_name in VGG16Layers:
         name, _, nn_model = load_vgg_16(layer_name)
     elif layer_name in VGG19Layers:
-        name, _, nn_model = load_vgg_19(layer_name)
+        name, _, nn_model = load_vgg_19(layer_name, layer_index)
     elif layer_name in ResNet18Layers:
         name, _, nn_model = load_resnet_18(layer_name)
     else:
