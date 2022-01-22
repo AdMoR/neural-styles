@@ -9,25 +9,47 @@ from neural_styles.nn_utils.prepare_model import VGG16Layers, VGG19Layers, ResNe
 from tensorboardX import SummaryWriter
 
 p = argparse.ArgumentParser()
-p.add_argument("--layer_index", required=True, type=int)
+p.add_argument("--layer_index", default=71, type=int)
 p.add_argument("--layer_name", default=VGG16Layers.Conv4_3, type=VGG16Layers,
                choices=list(VGG16Layers))
-p.add_argument("--n_paths", default=800, type=int)
-p.add_argument("--imsize", default=4*224, type=int)
-p.add_argument("--n_steps", default=1200, type=int)
+p.add_argument("--n_paths", default=200, type=int)
+p.add_argument("--imsize", default=224, type=int)
+p.add_argument("--n_steps", default=1000, type=int)
 
 
-def run(n_paths, im_size, n_steps, layer_name, layer_index):
-    name = "result_" + "_".join([f"{k}{v}" for k, v in zip(["n_paths", "im_size", "n_steps", "layer_name", "layer_index"],
-                                                           [n_paths, im_size, n_steps, layer_name, layer_index])])
+def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
+    upscale_x = 4
+    upscale_y = 3
+
+    name = "result_" + "_".join(
+        [f"{k}{v}" for k, v in zip(["n_paths", "im_size", "n_steps", "layer_name", "layer_index"],
+                                   [n_paths_original, im_size_original, n_steps, layer_name, layer_index])])
 
     with SummaryWriter(log_dir=f"./logs/{name}", comment=name) as writer:
-        path = "/Users/amorvan/Documents/code_dw/neural-styles/images/bw_svg_neural_style/" \
-               "result_n_paths200_im_size224_n_steps500_layer_nameVGGLayers.Conv4_3_layer_index2.svg"
-        gen = ScaledSvgGen(path, 4, 4)
-        optimizer = CurveOptimizer(n_steps, im_size, im_size, gen.gen_func(), gen_vgg16_excitation_func(layer_name, 2))
+        gen = Generator(n_paths_original, im_size_original, im_size_original)
+        optimizer = CurveOptimizer(n_steps, im_size_original, im_size_original, gen.gen_func(),
+                                   gen_vgg16_excitation_func(layer_name, layer_index), scale=(0.9, 1.05), n_augms=8)
         shapes, shape_groups = optimizer.gen_and_optimize(writer, color_optimisation_activated=False)
-        pydiffvg.save_svg(name + "_large.svg", im_size, im_size, shapes, shape_groups)
+        filename = "./" + name.replace(".", "_") + ".svg"
+        pydiffvg.save_svg(filename, im_size_original, im_size_original, shapes, shape_groups)
+
+    n_paths = upscale_x * upscale_y * n_paths_original
+    im_size_x = upscale_x * im_size_original
+    im_size_y = upscale_y * im_size_original
+    n_steps *= 2
+
+    large_name = "result" + "_".join(
+        [f"{k}{v}" for k, v in zip(["n_paths", "im_size", "n_steps", "layer_name", "layer_index"],
+                                   [n_paths, upscale_x, n_steps, layer_name, layer_index])])
+
+    with SummaryWriter(log_dir=f"./logs/{large_name}", comment=large_name) as writer:
+        gen = ScaledSvgGen(filename, upscale_y, upscale_x)
+        optimizer = CurveOptimizer(n_steps, im_size_y, im_size_x, gen.gen_func(),
+                                   gen_vgg16_excitation_func(layer_name, layer_index),
+                                   scale=[0.8 * 1. / upscale_y, 1.2 * 1. / upscale_x], n_augms=12)
+        shapes, shape_groups = optimizer.gen_and_optimize(writer, color_optimisation_activated=False)
+        filename_large = "./" + large_name.replace(".", "_") + ".svg"
+        pydiffvg.save_svg(filename_large, im_size_y, im_size_x, shapes, shape_groups)
 
 
 if __name__ == "__main__":
