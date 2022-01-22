@@ -217,7 +217,7 @@ class ScaledSvgGen(NamedTuple):
         for dx in range(0, self.multiplier_x):
             for dy in range(0, self.multiplier_y):
                 for i in range(len(shapes)):
-                    new_shape = build_translated_path(shapes[i], dx * canvas_width, dy * canvas_height)
+                    new_shape = build_translated_path(shapes[i], dy * canvas_height, dx * canvas_width)
                     new_shapes.append(new_shape)
                     path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(new_shapes) - 1]), fill_color=None,
                                                      stroke_color=torch.tensor(self.stroke_color))
