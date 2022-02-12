@@ -76,7 +76,8 @@ def load_resnet_18(layer_name, image_size=500):
     else:
         max_layer = layer_name.value
 
-    return "resnet18_{}".format(layer_name), build_subsampler(image_size), nn.Sequential(nn_model[0: max_layer])
+    return "resnet18_{}".format(layer_name), build_subsampler(image_size), \
+           nn.Sequential(*nn_model[0: max_layer])
 
 
 def load_style_resnet_18(layers, image_size=500):
