@@ -201,6 +201,31 @@ class Generator(NamedTuple):
         return setup_parameters
 
 
+class GroupGenerator(NamedTuple):
+    """
+    This variation is used to combine layer of colors
+    """
+    num_paths: int
+    canvas_width: int
+    canvas_height: int
+    colors: List[tuple]
+
+    def gen_func(self):
+        def setup_parameters(*args, **kwargs):
+            shapes = []
+            shape_groups = []
+            for c in self.colors:
+                for i in range(self.num_paths):
+                    num_segments = random.randint(1, 3)
+                    path = build_random_path(num_segments, self.canvas_width, self.canvas_height)
+                    shapes.append(path)
+                    path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]), fill_color=None,
+                                                     stroke_color=torch.tensor(*c, 1))
+                    shape_groups.append(path_group)
+            return shapes, shape_groups
+        return setup_parameters
+
+
 class ScaledSvgGen(NamedTuple):
     input_path: str
     multiplier_x: int
