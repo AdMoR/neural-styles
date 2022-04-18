@@ -220,7 +220,7 @@ class GroupGenerator(NamedTuple):
                     path = build_random_path(num_segments, self.canvas_width, self.canvas_height)
                     shapes.append(path)
                     path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]), fill_color=None,
-                                                     stroke_color=torch.tensor(*c, 1))
+                                                     stroke_color=torch.tensor((*c, 1)))
                     shape_groups.append(path_group)
             return shapes, shape_groups
         return setup_parameters
