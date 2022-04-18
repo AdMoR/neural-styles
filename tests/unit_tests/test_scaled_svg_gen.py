@@ -6,14 +6,19 @@ import numpy as np
 from torchvision.io.image import write_jpeg
 
 from neural_styles.svg_optim.svg_optimizer import ScaledSvgGen
+from neural_styles import ROOT_DIR
 
 
 class TestScaledSVG(TestCase):
 
+    @classmethod
+    def setUpClass(cls) -> None:
+        torch.set_default_tensor_type('torch.FloatTensor')
+
     def test(self):
         multiplier = 4
-        path = "/Users/amorvan/Documents/code_dw/neural-styles/images/bw_svg_neural_style/" \
-               "result_n_paths200_im_size224_n_steps500_layer_nameVGGLayers.Conv4_3_layer_index2.svg"
+        path = ROOT_DIR + "/../images/bw_svg_neural_style/" \
+                          "result_n_paths200_im_size224_n_steps500_layer_nameVGGLayers.Conv4_3_layer_index2.svg"
         s = ScaledSvgGen(path, multiplier, multiplier)
         f = s.gen_func()
 
@@ -28,15 +33,13 @@ class TestScaledSVG(TestCase):
         img = render(multiplier * 224, multiplier * 224, 2, 2, 0,
                      torch.ones((multiplier * 224, multiplier * 224, 4)), *scene_args)
 
-        print(img.shape)
-
-        write_jpeg(255 * img.permute(2, 0, 1)[:3, :, :].to(torch.uint8), "test.jpg")
+        write_jpeg(255 * img.cpu().permute(2, 0, 1)[:3, :, :].to(torch.uint8), "test.jpg")
 
     def test_ratio(self):
         multiplier_x = 4
         multiplier_y = 3
-        path = "/Users/amorvan/Documents/code_dw/neural-styles/images/bw_svg_neural_style/" \
-               "result_n_paths200_im_size224_n_steps500_layer_nameVGGLayers.Conv4_3_layer_index2.svg"
+        path = ROOT_DIR + "/../images/bw_svg_neural_style/" \
+                          "result_n_paths200_im_size224_n_steps500_layer_nameVGGLayers.Conv4_3_layer_index2.svg"
         s = ScaledSvgGen(path, multiplier_y, multiplier_x)
         f = s.gen_func()
 
@@ -53,4 +56,4 @@ class TestScaledSVG(TestCase):
 
         print(img.shape)
 
-        write_jpeg(255 * img.permute(2, 0, 1)[:3, :, :].to(torch.uint8), "test2.jpg")
+        write_jpeg(255 * img.cpu().permute(2, 0, 1)[:3, :, :].to(torch.uint8), "test2.jpg")
