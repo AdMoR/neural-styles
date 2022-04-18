@@ -4,7 +4,7 @@ from enum import Enum
 import pydiffvg
 
 from neural_styles.svg_optim.excitation_forward_func import gen_vgg16_excitation_func
-from neural_styles.svg_optim.svg_optimizer import CurveOptimizer, Generator, ScaledSvgGen
+from neural_styles.svg_optim.svg_optimizer import CurveOptimizer, Generator, ScaledSvgGen, GroupGenerator
 from neural_styles.nn_utils.prepare_model import VGG16Layers, VGG19Layers, ResNet18Layers
 from tensorboardX import SummaryWriter
 
@@ -14,7 +14,7 @@ p.add_argument("--layer_name", default=VGG16Layers.Conv4_3, type=VGG16Layers,
                choices=list(VGG16Layers))
 p.add_argument("--n_paths", default=200, type=int)
 p.add_argument("--imsize", default=224, type=int)
-p.add_argument("--n_steps", default=1000, type=int)
+p.add_argument("--n_steps", default=100, type=int)
 
 
 def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
@@ -29,7 +29,7 @@ def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
         gen = Generator(n_paths_original, im_size_original, im_size_original)
         optimizer = CurveOptimizer(n_steps, im_size_original, im_size_original, gen.gen_func(),
                                    gen_vgg16_excitation_func(layer_name, layer_index), scale=(0.9, 1.05), n_augms=8)
-        shapes, shape_groups = optimizer.gen_and_optimize(writer, color_optimisation_activated=False)
+        shapes, shape_groups = optimizer.gen_and_optimize(writer, color_optimisation_activated=True)
         filename = "./" + name.replace(".", "_") + ".svg"
         pydiffvg.save_svg(filename, im_size_original, im_size_original, shapes, shape_groups)
 
@@ -43,7 +43,8 @@ def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
                                    [n_paths, upscale_x, n_steps, layer_name, layer_index])])
 
     with SummaryWriter(log_dir=f"./logs/{large_name}", comment=large_name) as writer:
-        gen = ScaledSvgGen(filename, upscale_y, upscale_x)
+        ori_gen = ScaledSvgGen(filename, upscale_y, upscale_x)
+        gen = GroupGenerator.from_existing(*ori_gen.gen_func(), 3)
         optimizer = CurveOptimizer(n_steps, im_size_y, im_size_x, gen.gen_func(),
                                    gen_vgg16_excitation_func(layer_name, layer_index),
                                    scale=[0.8 * 1. / upscale_y, 1.2 * 1. / upscale_x], n_augms=12)
