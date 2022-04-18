@@ -44,8 +44,9 @@ def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
 
     with SummaryWriter(log_dir=f"./logs/{large_name}", comment=large_name) as writer:
         ori_gen = ScaledSvgGen(filename, upscale_y, upscale_x)
-        gen = GroupGenerator.from_existing(*ori_gen.gen_func(), 3)
-        optimizer = CurveOptimizer(n_steps, im_size_y, im_size_x, gen.gen_func(),
+        sha, sha_grp = ori_gen.gen_func()()
+        gen = GroupGenerator.from_existing(sha, sha_grp, 3)
+        optimizer = CurveOptimizer(n_steps, im_size_y, im_size_x, gen,
                                    gen_vgg16_excitation_func(layer_name, layer_index),
                                    scale=[0.8 * 1. / upscale_y, 1.2 * 1. / upscale_x], n_augms=12)
         shapes, shape_groups = optimizer.gen_and_optimize(writer, color_optimisation_activated=False)
