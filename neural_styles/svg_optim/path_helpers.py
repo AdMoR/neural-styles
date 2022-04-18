@@ -4,7 +4,7 @@ import random
 import pydiffvg
 
 
-def build_random_path(num_segments, canvas_width, canvas_height):
+def build_random_path(num_segments, canvas_width, canvas_height, stroke_width=1.0):
     num_control_points = torch.zeros(num_segments, dtype=torch.int32) + 2
     points = []
     p0 = (random.random(), random.random())
@@ -22,7 +22,7 @@ def build_random_path(num_segments, canvas_width, canvas_height):
     points[:, 0] *= canvas_width
     points[:, 1] *= canvas_height
     path = pydiffvg.Path(num_control_points=num_control_points, points=points,
-                         stroke_width=torch.tensor(1.0), is_closed=False)
+                         stroke_width=torch.tensor(stroke_width), is_closed=False)
     return path
 
 

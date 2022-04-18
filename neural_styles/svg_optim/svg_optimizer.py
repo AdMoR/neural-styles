@@ -1,10 +1,11 @@
 import pydiffvg
 import torch
+from sklearn.cluster import KMeans
 import functools
 import random
 import os
 import torchvision.transforms as transforms
-from typing import NamedTuple, Any, List, Callable
+from typing import NamedTuple, Any, List, Callable, Dict
 from neural_styles.svg_optim.path_helpers import build_random_path, build_translated_path
 
 
@@ -208,19 +209,44 @@ class GroupGenerator(NamedTuple):
     num_paths: int
     canvas_width: int
     canvas_height: int
-    colors: List[tuple]
+    colors: Dict[tuple, float]
+
+    @classmethod
+    def from_existing(cls, shapes, shape_groups, n_groups=3):
+        """
+        The goal of this function is to build a new pair of shapes, shape_groups with limited color and stroke_width
+        So we try to learn a set of (color, width) that minimize the error wrt the original data
+        """
+        from skimage.color import rgb2lab, lab2rgb
+
+        X = [rgb2lab(sg.stroke_color.detach().numpy()[:3]) for sg in shape_groups]
+        W = [s.stroke_width.detach().numpy() for s in shapes]
+
+        kmeans = KMeans(n_clusters=n_groups, random_state=0, max_iter=1000)
+        kmeans.fit(X, sample_weight=W)
+        predicted_kmeans = kmeans.predict(X, sample_weight=W)
+
+        new_colors = [lab2rgb(kmeans.cluster_centers_[i]) for i in predicted_kmeans]
+
+        new_sgs = [pydiffvg.ShapeGroup(shape_ids=sg.shape_ids, fill_color=None,
+                                       stroke_color=torch.tensor((*new_colors[i], 1)))
+                   for i, sg in enumerate(shape_groups)]
+
+        def setup_parameters(*args, **kwargs):
+            return shapes, new_sgs
+        return setup_parameters
 
     def gen_func(self):
         def setup_parameters(*args, **kwargs):
             shapes = []
             shape_groups = []
-            for c in self.colors:
-                for i in range(self.num_paths):
+            for color, ratio in self.colors.items():
+                for i in range(int(ratio * self.num_paths)):
                     num_segments = random.randint(1, 3)
                     path = build_random_path(num_segments, self.canvas_width, self.canvas_height)
                     shapes.append(path)
                     path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]), fill_color=None,
-                                                     stroke_color=torch.tensor((*c, 1)))
+                                                     stroke_color=torch.tensor((*color, 1)))
                     shape_groups.append(path_group)
             return shapes, shape_groups
         return setup_parameters
