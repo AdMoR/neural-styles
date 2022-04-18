@@ -1,7 +1,10 @@
 import argparse
 from enum import Enum
 
-import pydiffvg
+try:
+    import pydiffvg
+except:
+    import diffvg as pydiffvg
 
 from neural_styles.svg_optim.excitation_forward_func import gen_vgg16_excitation_func
 from neural_styles.svg_optim.svg_optimizer import CurveOptimizer, Generator, ScaledSvgGen, GroupGenerator
@@ -14,7 +17,7 @@ p.add_argument("--layer_name", default=VGG16Layers.Conv4_3, type=VGG16Layers,
                choices=list(VGG16Layers))
 p.add_argument("--n_paths", default=200, type=int)
 p.add_argument("--imsize", default=224, type=int)
-p.add_argument("--n_steps", default=10, type=int)
+p.add_argument("--n_steps", default=1000, type=int)
 
 
 def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
@@ -57,4 +60,5 @@ def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
 if __name__ == "__main__":
     namespace = p.parse_known_args()[0]
     print(namespace)
-    run(namespace.n_paths, namespace.imsize, namespace.n_steps, namespace.layer_name, 2)
+    for i in range(100):
+        run(namespace.n_paths, namespace.imsize, namespace.n_steps, namespace.layer_name, i)

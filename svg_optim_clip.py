@@ -1,6 +1,9 @@
 import argparse
 
-import pydiffvg
+try:
+    import pydiffvg
+except:
+    import diffvg as pydiffvg
 
 from neural_styles.svg_optim.clip_forward_func import ClipForwardFunc
 from neural_styles.svg_optim.helpers import model

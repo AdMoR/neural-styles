@@ -1,4 +1,7 @@
-import pydiffvg
+try:
+    import pydiffvg
+except:
+    import diffvg as pydiffvg
 import torch
 import random
 from typing import NamedTuple

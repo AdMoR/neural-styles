@@ -1,6 +1,9 @@
 import argparse
 
-import pydiffvg
+try:
+    import pydiffvg
+except:
+    import diffvg as pydiffvg
 
 from neural_styles.svg_optim.excitation_forward_func import gen_vgg16_excitation_func
 from neural_styles.svg_optim.svg_optimizer import CurveOptimizer, Generator

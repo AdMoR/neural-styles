@@ -1,6 +1,9 @@
 from unittest import TestCase
 
-import pydiffvg
+try:
+    import pydiffvg
+except:
+    import diffvg as pydiffvg
 import torch
 import numpy as np
 from torchvision.io.image import write_jpeg

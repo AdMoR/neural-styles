@@ -1,7 +1,10 @@
 import argparse
 import os
 
-import pydiffvg
+try:
+    import pydiffvg
+except:
+    import diffvg as pydiffvg
 
 from svg_optim.excitation_forward_func import gen_vgg16_mimick
 from svg_optim.svg_optimizer import CurveOptimizer, Generator

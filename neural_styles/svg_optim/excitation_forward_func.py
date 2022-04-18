@@ -1,7 +1,10 @@
 import torch
 import torchvision.transforms as transforms
 from PIL import Image
-import pydiffvg
+try:
+    import pydiffvg
+except:
+    import diffvg as pydiffvg
 
 from neural_styles.nn_utils.prepare_model import load_vgg_16, load_vgg_19, load_resnet_18, \
     VGG16Layers, VGG19Layers, ResNet18Layers

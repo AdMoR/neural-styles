@@ -1,7 +1,10 @@
 import copy
 import torch
 import random
-import pydiffvg
+try:
+    import pydiffvg
+except:
+    import diffvg as pydiffvg
 
 
 def build_random_path(num_segments, canvas_width, canvas_height, stroke_width=1.0):

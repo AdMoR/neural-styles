@@ -1,4 +1,7 @@
-import pydiffvg
+try:
+    import pydiffvg
+except:
+    import diffvg as pydiffvg
 import torch
 from typing import NamedTuple, Dict, Any, List, Callable
 import clip
