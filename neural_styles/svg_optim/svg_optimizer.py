@@ -119,7 +119,7 @@ class CurveOptimizer(NamedTuple):
             points_optim.step()
             if color_optimisation_activated:
                 color_optim.step()
-                stroke_optim.step()
+                #stroke_optim.step()
 
             for path in shapes:
                 path.stroke_width.data.clamp_(1.0, max_width)
