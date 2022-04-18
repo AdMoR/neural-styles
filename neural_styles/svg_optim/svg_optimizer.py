@@ -228,6 +228,8 @@ class GroupGenerator(NamedTuple):
 
         new_colors = [lab2rgb(kmeans.cluster_centers_[i]) for i in predicted_kmeans]
 
+        print("-----> ", new_colors)
+
         new_sgs = [pydiffvg.ShapeGroup(shape_ids=sg.shape_ids, fill_color=None,
                                        stroke_color=torch.tensor((*new_colors[i], 1)))
                    for i, sg in enumerate(shape_groups)]
@@ -271,7 +273,7 @@ class ScaledSvgGen(NamedTuple):
                     new_shape = build_translated_path(shapes[i], dy * canvas_height, dx * canvas_width)
                     new_shapes.append(new_shape)
                     path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(new_shapes) - 1]), fill_color=None,
-                                                     stroke_color=torch.tensor(self.stroke_color))
+                                                     stroke_color=torch.tensor(shape_groups[i].stroke_color))
                     new_groups.append(path_group)
 
         def gen():

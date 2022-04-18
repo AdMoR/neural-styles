@@ -14,7 +14,7 @@ p.add_argument("--layer_name", default=VGG16Layers.Conv4_3, type=VGG16Layers,
                choices=list(VGG16Layers))
 p.add_argument("--n_paths", default=200, type=int)
 p.add_argument("--imsize", default=224, type=int)
-p.add_argument("--n_steps", default=100, type=int)
+p.add_argument("--n_steps", default=10, type=int)
 
 
 def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
@@ -26,7 +26,7 @@ def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
                                    [n_paths_original, im_size_original, n_steps, layer_name, layer_index])])
 
     with SummaryWriter(log_dir=f"./logs/{name}", comment=name) as writer:
-        gen = Generator(n_paths_original, im_size_original, im_size_original)
+        gen = Generator(n_paths_original, im_size_original, im_size_original, allow_color=True)
         optimizer = CurveOptimizer(n_steps, im_size_original, im_size_original, gen.gen_func(),
                                    gen_vgg16_excitation_func(layer_name, layer_index), scale=(0.9, 1.05), n_augms=8)
         shapes, shape_groups = optimizer.gen_and_optimize(writer, color_optimisation_activated=True)
