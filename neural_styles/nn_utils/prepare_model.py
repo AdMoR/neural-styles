@@ -18,6 +18,7 @@ class VGG19Layers(Enum):
     Conv5_2 = 30
     Conv5_3 = 32
     Conv5_4 = 34
+
     def __repr__(self):
         return str(self)
 

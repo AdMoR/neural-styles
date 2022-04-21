@@ -80,21 +80,27 @@ class CurveOptimizer(NamedTuple):
 
         color_vars = list()
         for group in shape_groups:
-            group.stroke_color.requires_grad = True
+            if color_optimisation_activated:
+                group.stroke_color.requires_grad = True
             color_vars.append(group.stroke_color)
 
         stroke_vars = list()
         for path in shapes:
-            path.stroke_width.requires_grad = True
+            if color_optimisation_activated:
+                path.stroke_width.requires_grad = True
             stroke_vars.append(path.stroke_width)
 
         # Optimizers
         points_optim = torch.optim.Adam(points_vars, lr=1.0)
-        color_optim = torch.optim.Adam(color_vars, lr=0.1)
-        stroke_optim = torch.optim.Adam(stroke_vars, lr=0.01)
+
+        if color_optimisation_activated:
+            color_optim = torch.optim.Adam(color_vars, lr=0.1)
+            stroke_optim = torch.optim.Adam(stroke_vars, lr=0.01)
+        else:
+            color_optim = None
+            stroke_optim = None
 
         # Run the main optimization loop
-        #all_groups = sum([g.param_groups for g in [points_optim, color_optim, stroke_optim]], [])
         for t in range(self.num_iter):
             # Anneal learning rate (makes videos look cleaner)
             if t == int(self.num_iter * 0.5):
