@@ -27,4 +27,4 @@ class TestColorGroupOptim(TestCase):
         optimizer = CurveOptimizer(self.n_iter, 224, 224, gen.gen_func(), forward_func)
         shapes, shape_groups = optimizer.gen_and_optimize()
         fn = gen.from_existing(shapes, shape_groups)
-        shapes, new_shape_groups = fn()
+        new_shapes, new_shape_groups = fn()

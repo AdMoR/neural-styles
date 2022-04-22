@@ -237,14 +237,25 @@ class GroupGenerator(NamedTuple):
 
         new_colors = [lab2rgb(kmeans.cluster_centers_[i]) for i in predicted_kmeans]
 
-        print("-----> ", new_colors)
-
         new_sgs = [pydiffvg.ShapeGroup(shape_ids=sg.shape_ids, fill_color=None,
                                        stroke_color=torch.tensor((*new_colors[i], 1)))
                    for i, sg in enumerate(shape_groups)]
 
+        def stroke_width_fn(sw):
+            width = float(sw.detach())
+            if width < 1.5:
+                return 1
+            if width < 2.5:
+                return 2
+            else:
+                return 3
+
+        new_shapes = [pydiffvg.Path(num_control_points=s.num_control_points, points=s.points,
+                                    stroke_width=stroke_width_fn(s.stroke_width), is_closed=False)
+                      for i, s in enumerate(shapes)]
+
         def setup_parameters(*args, **kwargs):
-            return shapes, new_sgs
+            return new_shapes, new_sgs
         return setup_parameters
 
     def gen_func(self):
