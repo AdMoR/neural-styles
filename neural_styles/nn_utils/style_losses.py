@@ -4,8 +4,6 @@ import torch.nn.functional as F
 #from .regularization_losses import gram_matrix
 
 
-
-
 def gram_matrix(x):
     B, C, H, W = x.shape
     feats = list()
@@ -13,7 +11,6 @@ def gram_matrix(x):
         x_p = x[b].view(C, -1) 
         feats.append(x_p.mm(x_p.t()).unsqueeze(0) / (C * H * W))
     return torch.cat(feats, dim=0)
-
 
 
 class StyleLoss(torch.nn.Module):

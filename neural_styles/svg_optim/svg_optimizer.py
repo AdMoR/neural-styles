@@ -46,7 +46,7 @@ class CurveOptimizer(NamedTuple):
     forward_model_func: Callable
 
     scale: tuple = (0.5, 0.9)  # Use smaller number of large image, st resize is not too extreme
-    n_augms: int = 4  # Should probably be proportional t the image size
+    n_augms: int = 1  # Should probably be proportional t the image size
 
     def gen_and_optimize(self, writer=None, color_optimisation_activated=False):
 
@@ -128,7 +128,7 @@ class CurveOptimizer(NamedTuple):
             points_optim.step()
             if color_optimisation_activated:
                 color_optim.step()
-                #stroke_optim.step()
+                stroke_optim.step()
 
             for path in shapes:
                 path.stroke_width.data.clamp_(1.0, max_width)
@@ -164,13 +164,13 @@ class CurveOptimizer(NamedTuple):
     def data_augment(self, img, NUM_AUGS, use_normalized_clip=True):
         # Image Augmentation Transformation
         augment_trans = transforms.Compose([
-            transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
+            #transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
             transforms.RandomResizedCrop(224, scale=self.scale),
         ])
 
         if use_normalized_clip:
             augment_trans = transforms.Compose([
-                transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
+                #transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
                 transforms.RandomResizedCrop(224, scale=self.scale),
                 transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
             ])

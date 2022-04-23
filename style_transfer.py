@@ -22,12 +22,11 @@ else:
 
 def run_optim(content_path, sys_path, image_size=500, lr=0.005, n_steps=4096):
     style_img = load_image(style_path)
-    print(torch.min(style_img), torch.max(style_img)) 
     content_img = load_image(content_path)
-    print(torch.min(content_img), torch.max(content_img))
 
     model = prepare_model.load_style_resnet_18([0, 1, 2, 3, 4, 5], image_size)
-    losses = [StyleLoss(i, 10 ** 8, content=True) for i in range(2, 4)] + [ContentLoss(i, content=True) for i in range(0, 5)]
+    losses = [StyleLoss(i, 10 ** 8, content=True) for i in range(2, 4)] + \
+             [ContentLoss(i, content=True) for i in range(0, 5)]
     tfs = [partial(jitter, 4), scaled_rotation, partial(jitter, 16)]
 
     opt = StyleImageVisualizer(losses=losses, model=model, transforms=tfs, batch_size=2)
