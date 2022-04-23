@@ -104,7 +104,7 @@ def load_vgg_16(layer_name, image_size=500, *args):
         return "vgg16_{}".format(layer_name), build_subsampler(image_size), nn_model
 
 
-def load_vgg_19(layer_name, layer_index):
+def load_vgg_19(layer_name):
     nn_model = models.vgg19(pretrained=True).eval()
     modules = list(nn_model.children())
     replace_relu_with_leaky(modules, ramp=0.1)
@@ -116,4 +116,4 @@ def load_vgg_19(layer_name, layer_index):
         max_layer = layer_name.value
     nn_model = nn.Sequential(modules[0][0:max_layer])
 
-    return "vgg19_{}".format(layer_index), build_subsampler(224), nn_model
+    return "vgg19", build_subsampler(224), nn_model
