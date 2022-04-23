@@ -7,7 +7,7 @@ class TestColorGroupOptim(TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.colors = {(1., 0, 0): 0.5, (0, 1., 0): 0.5}
+        cls.colors = [((1., 0, 0), 0.5, 1.0), ((0, 1., 0), 0.5, 1.0)]
         cls.gen = GroupGenerator(2, 224, 224, cls.colors)
         cls.n_iter = 10
         torch.set_default_tensor_type('torch.FloatTensor')
@@ -19,9 +19,9 @@ class TestColorGroupOptim(TestCase):
 
         self.assertEqual(len(shapes), 2)
         colors = [tuple(sg.stroke_color[:3].detach().numpy().tolist()) for sg in shape_groups]
-        self.assertListEqual(list(self.colors.keys()), colors)
+        self.assertListEqual(list(map(lambda x: x[0], self.colors)), colors)
 
-    def test_gen_from_existsing(self):
+    def test_gen_from_existing(self):
         gen = GroupGenerator(10, 224, 224, self.colors)
         forward_func = lambda img_batch, **kwargs: torch.linalg.norm(img_batch)
         optimizer = CurveOptimizer(self.n_iter, 224, 224, gen.gen_func(), forward_func)
