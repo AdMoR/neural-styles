@@ -21,16 +21,14 @@ else:
 
 
 def run(n_paths, im_size, n_steps, img_path):
-    #gen = Generator(n_paths, im_size, im_size)
-    #optimizer = CurveOptimizer(n_steps, im_size, im_size, gen.gen_func(), gen_vgg16_mimick(img_path))
-    #shapes, shape_groups = optimizer.gen_and_optimize()
+    gen = Generator(n_paths, im_size, im_size)
+    optimizer = CurveOptimizer(n_steps, im_size, im_size, gen.gen_func(), gen_vgg16_mimick(img_path))
+    shapes, shape_groups = optimizer.gen_and_optimize()
 
-    gen = Generator(n_paths, im_size, im_size, allow_color=True)
-    func = gen_vgg16_mimick("/home/amor/Downloads/mondrian.jpeg")
-    optimizer = CurveOptimizer(1500, 224, 224, gen.gen_func(), func)
-    shapes, shape_groups = optimizer.gen_and_optimize(color_optimisation_activated=True)
-
-
+    name = "result_" + "_".join([f"{k}{v}" for k, v in zip(["n_paths", "im_size", "n_steps", "file"],
+                                                           [n_paths, im_size, n_steps,
+                                                            os.path.splitext(os.path.basename(img_path))[0]])]) + ".svg"
+    pydiffvg.save_svg(name, im_size, im_size, shapes, shape_groups)
 
 
 if __name__ == "__main__":
