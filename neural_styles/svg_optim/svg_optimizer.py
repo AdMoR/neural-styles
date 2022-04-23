@@ -244,11 +244,11 @@ class GroupGenerator(NamedTuple):
         def stroke_width_fn(sw):
             width = float(sw.detach())
             if width < 1.5:
-                return torch.Tensor(1.0)
+                return torch.Tensor([1.0])
             if width < 2.5:
-                return torch.Tensor(2.0)
+                return torch.Tensor([2.0])
             else:
-                return torch.Tensor(3.0)
+                return torch.Tensor([3.0])
 
         new_shapes = [pydiffvg.Path(num_control_points=s.num_control_points, points=s.points,
                                     stroke_width=stroke_width_fn(s.stroke_width), is_closed=False)

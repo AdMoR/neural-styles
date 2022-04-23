@@ -36,8 +36,8 @@ def gen_vgg16_excitation_func(layer_name, layer_index):
     return func
 
 
-def gen_vgg16_mimick(img_path):
-    name, _, nn_model = load_vgg_16(VGG16Layers.Conv5_3)
+def gen_vgg16_mimick(img_path, layer=VGG16Layers.Conv5_3):
+    name, _, nn_model = load_vgg_16(layer)
     nn_model = nn_model.to(pydiffvg.get_device(), torch.get_default_dtype())
     nn_model.requires_grad = False
     tvloss = TVLoss()

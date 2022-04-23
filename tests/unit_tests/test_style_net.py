@@ -8,6 +8,7 @@ import torch
 from torchvision.io.image import write_jpeg
 
 from neural_styles.nn_utils.adapted_networks import StyleResNet18
+from neural_styles.nn_utils.prepare_model import VGG16Layers
 from neural_styles.svg_optim.excitation_forward_func import gen_vgg16_mimick
 from neural_styles.svg_optim.svg_optimizer import CurveOptimizer, Generator
 from neural_styles import ROOT_DIR
@@ -44,10 +45,10 @@ class TestGramMatrixLoss(TestCase):
     def test_line_mimick(self):
         gen = Generator(150, 224, 224, allow_color=True)
         img_path = os.path.join(ROOT_DIR, "../images", "LayerExcitationLoss_alexnet_1_15_2048_0.0005.jpg")
-        func = gen_vgg16_mimick("/home/amor/Downloads/mondrian.jpeg")
+        func = gen_vgg16_mimick("/home/amor/Downloads/mondrian.jpeg", VGG16Layers.Conv2_2)
         optimizer = CurveOptimizer(2500, 224, 224, gen.gen_func(), func)
 
-        with SummaryWriter(log_dir=f"./logs/TEST2", comment="TEST2") as writer:
+        with SummaryWriter(log_dir=f"./logs/TEST4", comment="TEST4") as writer:
             shapes, shape_groups = optimizer.gen_and_optimize(writer=writer, color_optimisation_activated=True)
 
         render = pydiffvg.RenderFunction.apply
