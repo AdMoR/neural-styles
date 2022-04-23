@@ -1,5 +1,5 @@
 import argparse
-from enum import Enum
+import random
 
 try:
     import pydiffvg
@@ -28,8 +28,12 @@ def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
         [f"{k}{v}" for k, v in zip(["n_paths", "im_size", "n_steps", "layer_name", "layer_index"],
                                    [n_paths_original, im_size_original, n_steps, layer_name, layer_index])])
 
+    def random_color():
+        return random.random(), random.random(), random.random()
+
     with SummaryWriter(log_dir=f"./logs/{name}", comment=name) as writer:
-        gen = Generator(n_paths_original, im_size_original, im_size_original, allow_color=True)
+        gen = GroupGenerator(n_paths_original, im_size_original, im_size_original,
+                             [(random_color(), 0.8, 1.0), (random_color(), 0.1, 3.0), (random_color(), 0.1, 3.0)])
         optimizer = CurveOptimizer(n_steps, im_size_original, im_size_original, gen.gen_func(),
                                    gen_vgg16_excitation_func(layer_name, layer_index), scale=(0.9, 1.05), n_augms=8)
         shapes, shape_groups = optimizer.gen_and_optimize(writer, color_optimisation_activated=True)

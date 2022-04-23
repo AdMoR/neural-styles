@@ -43,13 +43,13 @@ class TestGramMatrixLoss(TestCase):
         print(loss)
 
     def test_line_mimick(self):
-        gen = Generator(150, 224, 224, allow_color=True)
+        gen = Generator(150, 224, 224, allow_color=False)
         img_path = os.path.join(ROOT_DIR, "../images", "LayerExcitationLoss_alexnet_1_15_2048_0.0005.jpg")
         func = gen_vgg16_mimick("/home/amor/Downloads/mondrian.jpeg", VGG16Layers.Conv2_2)
         optimizer = CurveOptimizer(2500, 224, 224, gen.gen_func(), func)
 
-        with SummaryWriter(log_dir=f"./logs/TEST4", comment="TEST4") as writer:
-            shapes, shape_groups = optimizer.gen_and_optimize(writer=writer, color_optimisation_activated=True)
+        with SummaryWriter(log_dir=f"./logs/TEST5", comment="TEST5") as writer:
+            shapes, shape_groups = optimizer.gen_and_optimize(writer=writer, color_optimisation_activated=False)
 
         render = pydiffvg.RenderFunction.apply
         scene_args = pydiffvg.RenderFunction.serialize_scene( \

@@ -8,7 +8,7 @@ import functools
 import random
 import os
 import torchvision.transforms as transforms
-from typing import NamedTuple, Any, List, Callable, Dict
+from typing import NamedTuple, Any, List, Callable, Dict, Tuple
 from neural_styles.svg_optim.path_helpers import build_random_path, build_translated_path
 
 
@@ -95,10 +95,10 @@ class CurveOptimizer(NamedTuple):
 
         if color_optimisation_activated:
             color_optim = torch.optim.Adam(color_vars, lr=0.1)
-            stroke_optim = torch.optim.Adam(stroke_vars, lr=0.01)
+            #stroke_optim = torch.optim.Adam(stroke_vars, lr=0.01)
         else:
             color_optim = None
-            stroke_optim = None
+        stroke_optim = None
 
         # Run the main optimization loop
         for t in range(self.num_iter):
@@ -115,7 +115,7 @@ class CurveOptimizer(NamedTuple):
             points_optim.zero_grad()
             if color_optimisation_activated:
                 color_optim.zero_grad()
-                stroke_optim.zero_grad()
+                #stroke_optim.zero_grad()
 
             img = self.gen_image_from_curves(t, shapes, shape_groups, gamma, background_image)
             im_batch = self.data_augment(img, self.n_augms, use_normalized_clip)
@@ -128,7 +128,7 @@ class CurveOptimizer(NamedTuple):
             points_optim.step()
             if color_optimisation_activated:
                 color_optim.step()
-                stroke_optim.step()
+                #stroke_optim.step()
 
             for path in shapes:
                 path.stroke_width.data.clamp_(1.0, max_width)
@@ -164,13 +164,13 @@ class CurveOptimizer(NamedTuple):
     def data_augment(self, img, NUM_AUGS, use_normalized_clip=True):
         # Image Augmentation Transformation
         augment_trans = transforms.Compose([
-            #transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
+            transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
             transforms.RandomResizedCrop(224, scale=self.scale),
         ])
 
         if use_normalized_clip:
             augment_trans = transforms.Compose([
-                #transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
+                transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
                 transforms.RandomResizedCrop(224, scale=self.scale),
                 transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
             ])
@@ -187,6 +187,7 @@ class Generator(NamedTuple):
     canvas_height: int
     allow_color: bool = False
     allow_alpha: bool = False
+    stroke_width: int = 1.0
 
     @property
     def stroke_color(self):
@@ -202,7 +203,8 @@ class Generator(NamedTuple):
             shape_groups = []
             for i in range(self.num_paths):
                 num_segments = random.randint(1, 3)
-                path = build_random_path(num_segments, self.canvas_width, self.canvas_height)
+                path = build_random_path(num_segments, self.canvas_width, self.canvas_height,
+                                         stroke_width=self.stroke_width)
                 shapes.append(path)
                 path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]), fill_color=None,
                                                  stroke_color=torch.tensor(self.stroke_color))
@@ -218,7 +220,7 @@ class GroupGenerator(NamedTuple):
     num_paths: int
     canvas_width: int
     canvas_height: int
-    colors: Dict[tuple, float]
+    colors_and_widths: List[Tuple[tuple, float, float]]
 
     @classmethod
     def from_existing(cls, shapes, shape_groups, n_groups=3):
@@ -255,17 +257,18 @@ class GroupGenerator(NamedTuple):
                       for i, s in enumerate(shapes)]
 
         def setup_parameters(*args, **kwargs):
-            return new_shapes, new_sgs
+            return shapes, new_sgs
         return setup_parameters
 
     def gen_func(self):
         def setup_parameters(*args, **kwargs):
             shapes = []
             shape_groups = []
-            for color, ratio in self.colors.items():
+            for color, ratio, stroke_width in self.colors_and_widths:
                 for i in range(int(ratio * self.num_paths)):
                     num_segments = random.randint(1, 3)
-                    path = build_random_path(num_segments, self.canvas_width, self.canvas_height)
+                    path = build_random_path(num_segments, self.canvas_width, self.canvas_height,
+                                             stroke_width=stroke_width)
                     shapes.append(path)
                     path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]), fill_color=None,
                                                      stroke_color=torch.tensor((*color, 1)))
