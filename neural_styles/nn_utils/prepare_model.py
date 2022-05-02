@@ -117,3 +117,35 @@ def load_vgg_19(layer_name):
     nn_model = nn.Sequential(modules[0][0:max_layer])
 
     return "vgg19", build_subsampler(224), nn_model
+
+
+class MultiInference(nn.Module):
+
+    def __init__(self, nn_slices, *args, **kwargs):
+        super(MultiInference, self).__init__()
+        self.nn_slices = nn_slices
+
+    def forward(self, x):
+        outputs = dict()
+        for k, nn_fn in self.nn_slices.items():
+            y = nn_fn(x)
+            outputs[k] = y
+            x = y
+        return outputs
+
+
+def multi_layer_forward(selected_layers):
+    vgg = models.vgg16(pretrained=True).eval()
+    modules = list(vgg.children())
+    replace_relu_with_leaky(modules, ramp=0.1)
+
+    nn_slices = dict()
+    print("---> ", selected_layers)
+    first_layer = 0
+    for last_layer in selected_layers:
+        print(last_layer)
+        nn_model = nn.Sequential(modules[0][first_layer: last_layer.value])
+        first_layer = last_layer.value
+        nn_slices[last_layer] = nn_model
+
+    return MultiInference(nn_slices)
