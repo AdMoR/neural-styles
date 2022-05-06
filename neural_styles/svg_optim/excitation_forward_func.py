@@ -128,11 +128,9 @@ def gen_vgg16_excitation_func_with_multi_style_regulation(img_path: str, style_l
 
     # Build once the feature for the reference image
     img_tensor = image_loader(img_path)
-    img_tensor.requires_grad = False
     ref_layer_dict = multi_model(img_tensor)
-    ref_style_features = {k: gram_matrix(v) for k, v in ref_layer_dict.items() if k in style_layers}
-    for x in ref_style_features:
-        x.requires_grad = False
+    ref_style_features = {k: gram_matrix(v).detach().numpy()
+                          for k, v in ref_layer_dict.items() if k in style_layers}
 
     def func(img_batch, iteration=None, **kwargs):
 
@@ -148,7 +146,7 @@ def gen_vgg16_excitation_func_with_multi_style_regulation(img_path: str, style_l
 
         style_reg = lambda_exc * reduce(
             lambda x, y: x + y,
-            map(lambda k: torch.norm(style_features[k] - ref_style_features[k]), style_layers)
+            map(lambda k: torch.norm(style_features[k] - torch.Tensor(ref_style_features[k])), style_layers)
         )
 
         if writer:

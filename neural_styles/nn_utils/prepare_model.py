@@ -140,10 +140,8 @@ def multi_layer_forward(selected_layers):
     replace_relu_with_leaky(modules, ramp=0.1)
 
     nn_slices = dict()
-    print("---> ", selected_layers)
     first_layer = 0
     for last_layer in selected_layers:
-        print(last_layer)
         nn_model = nn.Sequential(modules[0][first_layer: last_layer.value])
         first_layer = last_layer.value
         nn_slices[last_layer] = nn_model
