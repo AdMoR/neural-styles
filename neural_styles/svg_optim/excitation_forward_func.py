@@ -129,7 +129,7 @@ def gen_vgg16_excitation_func_with_multi_style_regulation(img_path: str, style_l
     # Build once the feature for the reference image
     img_tensor = image_loader(img_path)
     ref_layer_dict = multi_model(img_tensor)
-    ref_style_features = {k: gram_matrix(v).detach().cpu().numpy()
+    ref_style_features = {k: gram_matrix(v).detach()
                           for k, v in ref_layer_dict.items() if k in style_layers}
 
     def func(img_batch, iteration=None, **kwargs):
