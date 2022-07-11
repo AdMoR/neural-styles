@@ -29,7 +29,7 @@ class TestGramMatrixLoss(TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        return
+        #return
         torch.set_default_tensor_type('torch.FloatTensor')
         pydiffvg.set_use_gpu(False)
 
@@ -48,7 +48,7 @@ class TestGramMatrixLoss(TestCase):
         func = gen_vgg16_mimick(img_path, VGG16Layers.Conv2_2)
         optimizer = CurveOptimizer(2500, 224, 224, gen.gen_func(), func)
 
-        with SummaryWriter(log_dir=f"./logs/TEST5", comment="TEST5") as writer:
+        with SummaryWriter(log_dir=f"./logs/TEST6", comment="TEST5") as writer:
             shapes, shape_groups = optimizer.gen_and_optimize(writer=writer, color_optimisation_activated=False)
 
         render = pydiffvg.RenderFunction.apply
@@ -61,14 +61,18 @@ class TestGramMatrixLoss(TestCase):
 
     def test_multi_reg(self):
         img_path = os.path.join(ROOT_DIR, "../images", "LayerExcitationLoss_alexnet_1_15_2048_0.0005.jpg")
-        func = gen_vgg16_excitation_func_with_multi_style_regulation(
-            img_path=img_path,
-            style_layers=[VGG16Layers.Conv1_2, VGG16Layers.Conv2_2],
-            excitation_layer=VGG16Layers.Conv4_3,
-            exc_layer_index=0,
-            lambda_exc=50
-        )
-        img = torch.ones((1, 3, 224, 224))
+        self.regulation = gen_vgg16_excitation_func_with_multi_style_regulation(img_path=img_path,
+                                                                                style_layers=[VGG16Layers.Conv1_2,
+                                                                                              VGG16Layers.Conv2_2],
+                                                                                excitation_layer=VGG16Layers.Conv4_3,
+                                                                                exc_layer_index=0, lambda_exc=50)
+        func = self.regulation
+        img = torch.ones((1, 3, 224, 224), requires_grad=True)
         rez = func(img)
+        rez.backward(inputs=[img])
+
+        img2 = torch.ones((1, 3, 224, 224), requires_grad=True)
+        rez = func(img2)
+        rez.backward(inputs=[img2])
 
 
