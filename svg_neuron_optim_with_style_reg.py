@@ -44,6 +44,7 @@ def run(n_paths, im_size, n_steps, exc_layer_name, exc_layer_index, style_layer_
         optimizer = CurveOptimizer(n_steps, im_size, im_size, gen.gen_func(), func)
         shapes, shape_groups = optimizer.gen_and_optimize(writer, color_optimisation_activated=False)
         pydiffvg.save_svg(name + ".svg", im_size, im_size, shapes, shape_groups)
+        print("Done")
 
 
 if __name__ == "__main__":

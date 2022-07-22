@@ -2,3 +2,4 @@ scikit-image
 tensorboardX
 nose
 imageio
+scikit-learn
