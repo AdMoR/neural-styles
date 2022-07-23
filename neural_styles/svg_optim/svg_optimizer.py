@@ -81,8 +81,8 @@ class CurveOptimizer(NamedTuple):
         color_vars = list()
         for group in shape_groups:
             if color_optimisation_activated:
-                group.stroke_color.requires_grad = True
-            color_vars.append(group.stroke_color)
+                group.fill_color.requires_grad = True
+            color_vars.append(group.fill_color)
 
         stroke_vars = list()
         for path in shapes:
@@ -119,7 +119,7 @@ class CurveOptimizer(NamedTuple):
 
             img = self.gen_image_from_curves(t, shapes, shape_groups, gamma, background_image)
             im_batch = self.data_augment(img, self.n_augms, use_normalized_clip)
-            loss = self.forward_model_func(im_batch)
+            loss = self.forward_model_func(im_batch, iteration=t)
 
             # Back-propagate the gradients.
             loss.backward()
@@ -133,7 +133,7 @@ class CurveOptimizer(NamedTuple):
             for path in shapes:
                 path.stroke_width.data.clamp_(1.0, max_width)
             for group in shape_groups:
-                group.stroke_color.data.clamp_(0.0, 1.0)
+                group.fill_color.data.clamp_(0.0, 1.0)
 
             if t % int(self.num_iter / 10) == 0 and writer is not None:
                 writer.add_scalars("neuron_excitation", {"loss": loss}, t)
@@ -188,6 +188,7 @@ class Generator(NamedTuple):
     allow_color: bool = False
     allow_alpha: bool = False
     stroke_width: int = 1.0
+    fill_color: bool = False
 
     @property
     def stroke_color(self):
@@ -202,12 +203,16 @@ class Generator(NamedTuple):
             shapes = []
             shape_groups = []
             for i in range(self.num_paths):
-                num_segments = random.randint(1, 3)
+                num_segments = random.randint(1, 1)
                 path = build_random_path(num_segments, self.canvas_width, self.canvas_height,
                                          stroke_width=self.stroke_width)
                 shapes.append(path)
-                path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]), fill_color=None,
-                                                 stroke_color=torch.tensor(self.stroke_color))
+                if self.fill_color:
+                    path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]),
+                                                     fill_color=torch.tensor(self.stroke_color))
+                else:
+                    path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]),
+                                                     stroke_color=torch.tensor(self.stroke_color))
                 shape_groups.append(path_group)
             return shapes, shape_groups
         return setup_parameters

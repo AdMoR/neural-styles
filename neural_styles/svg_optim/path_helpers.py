@@ -13,7 +13,7 @@ def build_random_path(num_segments, canvas_width, canvas_height, stroke_width=1.
     p0 = (random.random(), random.random())
     points.append(p0)
     for j in range(num_segments):
-        radius = 0.1
+        radius = 0.4
         p1 = (p0[0] + radius * (random.random() - 0.5), p0[1] + radius * (random.random() - 0.5))
         p2 = (p1[0] + radius * (random.random() - 0.5), p1[1] + radius * (random.random() - 0.5))
         p3 = (p2[0] + radius * (random.random() - 0.5), p2[1] + radius * (random.random() - 0.5))

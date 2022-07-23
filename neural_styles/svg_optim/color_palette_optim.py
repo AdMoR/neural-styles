@@ -29,7 +29,7 @@ class PathAndFormGenerator(NamedTuple):
             shapes = []
             shape_groups = []
             for i in range(self.num_paths):
-                num_segments = random.randint(1, 3)
+                num_segments = random.randint(1, 1)
                 path = path_helpers.build_random_path(num_segments)
                 shapes.append(path)
                 path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]), fill_color=None,
