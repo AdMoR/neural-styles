@@ -9,7 +9,7 @@ import random
 import os
 import torchvision.transforms as transforms
 from typing import NamedTuple, Any, List, Callable, Dict, Tuple
-from neural_styles.svg_optim.path_helpers import build_random_path, build_translated_path
+from neural_styles.svg_optim.path_helpers import build_random_path, build_translated_path, build_random_polys
 
 
 class ColorGroup(NamedTuple):
@@ -80,9 +80,14 @@ class CurveOptimizer(NamedTuple):
 
         color_vars = list()
         for group in shape_groups:
-            if color_optimisation_activated:
-                group.fill_color.requires_grad = True
-            color_vars.append(group.fill_color)
+            if hasattr(group, "fill_color"):
+                if color_optimisation_activated:
+                    group.fill_color.requires_grad = True
+                color_vars.append(group.fill_color)
+            else:
+                if color_optimisation_activated:
+                    group.stroke_color.requires_grad = True
+                color_vars.append(group.stroke_color)
 
         stroke_vars = list()
         for path in shapes:
@@ -138,7 +143,8 @@ class CurveOptimizer(NamedTuple):
             if t % int(self.num_iter / 10) == 0 and writer is not None:
                 writer.add_scalars("neuron_excitation", {"loss": loss}, t)
                 writer.add_image('Rendering', img[0], t)
-
+        writer.add_scalars("neuron_excitation", {"loss": loss}, t)
+        writer.add_image('Rendering', img[0], t)
         return shapes, shape_groups
 
     def gen_image_from_curves(self, t, shapes, shape_groups, gamma, background_image):
@@ -164,13 +170,13 @@ class CurveOptimizer(NamedTuple):
     def data_augment(self, img, NUM_AUGS, use_normalized_clip=True):
         # Image Augmentation Transformation
         augment_trans = transforms.Compose([
-            #transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
+            transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
             transforms.RandomResizedCrop(224, scale=self.scale),
         ])
 
         if use_normalized_clip:
             augment_trans = transforms.Compose([
-                #transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
+                transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
                 transforms.RandomResizedCrop(224, scale=self.scale),
                 transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
             ])
@@ -203,9 +209,46 @@ class Generator(NamedTuple):
             shapes = []
             shape_groups = []
             for i in range(self.num_paths):
-                num_segments = random.randint(1, 1)
+                num_segments = random.randint(1, 3)
                 path = build_random_path(num_segments, self.canvas_width, self.canvas_height,
                                          stroke_width=self.stroke_width)
+                shapes.append(path)
+                if self.fill_color:
+                    path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]),
+                                                     fill_color=torch.tensor(self.stroke_color))
+                else:
+                    path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]),
+                                                     stroke_color=torch.tensor(self.stroke_color))
+                shape_groups.append(path_group)
+            return shapes, shape_groups
+        return setup_parameters
+
+
+class PolyGenerator(NamedTuple):
+    num_polys: int
+    canvas_width: int
+    canvas_height: int
+    allow_color: bool = False
+    allow_alpha: bool = False
+    stroke_width: int = 1.0
+    fill_color: bool = True
+
+    @property
+    def stroke_color(self):
+        alpha = 1. if not self.allow_alpha else random.random()
+        if self.allow_color:
+            return random.random(), random.random(), random.random(), alpha
+        else:
+            return 0., 0., 0., alpha
+
+    def gen_func(self):
+        def setup_parameters(*args, **kwargs):
+            shapes = []
+            shape_groups = []
+            for i in range(self.num_polys):
+                n_points = random.randint(3, 6)
+                path = build_random_polys(n_points, self.canvas_width, self.canvas_height,
+                                          stroke_width=self.stroke_width)
                 shapes.append(path)
                 if self.fill_color:
                     path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]),

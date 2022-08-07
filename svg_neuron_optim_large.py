@@ -12,12 +12,12 @@ from neural_styles.nn_utils.prepare_model import VGG16Layers, VGG19Layers, ResNe
 from tensorboardX import SummaryWriter
 
 p = argparse.ArgumentParser()
-p.add_argument("--layer_index", default=71, type=int)
+p.add_argument("--layer_index", default=79, type=int)
 p.add_argument("--layer_name", default=VGG16Layers.Conv4_3, type=VGG16Layers,
                choices=list(VGG16Layers))
-p.add_argument("--n_paths", default=200, type=int)
+p.add_argument("--n_paths", default=150, type=int)
 p.add_argument("--imsize", default=224, type=int)
-p.add_argument("--n_steps", default=1000, type=int)
+p.add_argument("--n_steps", default=500, type=int)
 
 
 def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
@@ -33,9 +33,9 @@ def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
 
     with SummaryWriter(log_dir=f"./logs/{name}", comment=name) as writer:
         gen = GroupGenerator(n_paths_original, im_size_original, im_size_original,
-                             [(random_color(), 0.8, 1.0), (random_color(), 0.1, 3.0), (random_color(), 0.1, 3.0)])
+                             [(random_color(), 0.8, 1.0), (random_color(), 0.1, 1.0), (random_color(), 0.1, .0)])
         optimizer = CurveOptimizer(n_steps, im_size_original, im_size_original, gen.gen_func(),
-                                   gen_vgg16_excitation_func(layer_name, layer_index), scale=(0.9, 1.05), n_augms=8)
+                                   gen_vgg16_excitation_func(layer_name, layer_index), scale=(0.95, 1.05), n_augms=4)
         shapes, shape_groups = optimizer.gen_and_optimize(writer, color_optimisation_activated=True)
         filename = "./" + name.replace(".", "_") + ".svg"
         pydiffvg.save_svg(filename, im_size_original, im_size_original, shapes, shape_groups)
@@ -55,7 +55,7 @@ def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
         gen = GroupGenerator.from_existing(sha, sha_grp, 3)
         optimizer = CurveOptimizer(n_steps, im_size_y, im_size_x, gen,
                                    gen_vgg16_excitation_func(layer_name, layer_index),
-                                   scale=[0.8 * 1. / upscale_y, 1.2 * 1. / upscale_x], n_augms=12)
+                                   scale=[0.95 * 1. / upscale_y, 1.05 * 1. / upscale_x], n_augms=8)
         shapes, shape_groups = optimizer.gen_and_optimize(writer, color_optimisation_activated=False)
         filename_large = "./" + large_name.replace(".", "_") + ".svg"
         pydiffvg.save_svg(filename_large, im_size_y, im_size_x, shapes, shape_groups)

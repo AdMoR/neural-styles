@@ -35,3 +35,20 @@ def build_translated_path(path, dx, dy):
     pts[:, 1] += dy
     return pydiffvg.Path(num_control_points=path.num_control_points, points=pts,
                          stroke_width=path.stroke_width, is_closed=False)
+
+
+def build_random_polys(n_pts, canvas_width, canvas_height, stroke_width=1.0):
+    points = []
+    p0 = (random.random(), random.random())
+    points.append(p0)
+    for j in range(n_pts):
+        radius = 0.4
+        p1 = (p0[0] + radius * (random.random() - 0.5), p0[1] + radius * (random.random() - 0.5))
+        points.append(p1)
+        p0 = p1
+    points = torch.tensor(points)
+    points[:, 0] *= canvas_width
+    points[:, 1] *= canvas_height
+    path = pydiffvg.Polygon(points=points,
+                            stroke_width=torch.tensor(stroke_width), is_closed=True)
+    return path
