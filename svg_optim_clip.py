@@ -7,7 +7,8 @@ except:
 
 from neural_styles.svg_optim.clip_forward_func import ClipForwardFunc
 from neural_styles.svg_optim.helpers import model
-from neural_styles.svg_optim.svg_optimizer import CurveOptimizer, Generator
+from neural_styles.svg_optim.svg_optimizer import CurveOptimizer
+from neural_styles.svg_optim.generators import Generator
 from tensorboardX import SummaryWriter
 
 p = argparse.ArgumentParser()

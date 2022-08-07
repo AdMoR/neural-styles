@@ -9,7 +9,8 @@ except:
 import urllib.request
 import torch
 from neural_styles.svg_optim.excitation_forward_func import gen_vgg16_excitation_func_with_style_regulation
-from neural_styles.svg_optim.svg_optimizer import CurveOptimizer, Generator
+from neural_styles.svg_optim.svg_optimizer import CurveOptimizer
+from neural_styles.svg_optim.generators import Generator, ScaledSvgGen, GroupGenerator
 from neural_styles.nn_utils.prepare_model import VGG16Layers
 from tensorboardX import SummaryWriter
 

@@ -5,7 +5,8 @@ import torch
 import pydiffvg
 
 from neural_styles.svg_optim.excitation_forward_func import gen_vgg16_mimick
-from neural_styles.svg_optim.svg_optimizer import CurveOptimizer, Generator
+from neural_styles.svg_optim.svg_optimizer import CurveOptimizer
+from neural_styles.svg_optim.generators import Generator, ScaledSvgGen, GroupGenerator
 
 p = argparse.ArgumentParser()
 p.add_argument("--img_path", required=True, type=str)

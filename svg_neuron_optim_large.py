@@ -7,7 +7,8 @@ except:
     import diffvg as pydiffvg
 
 from neural_styles.svg_optim.excitation_forward_func import gen_vgg16_excitation_func
-from neural_styles.svg_optim.svg_optimizer import CurveOptimizer, Generator, ScaledSvgGen, GroupGenerator
+from neural_styles.svg_optim.svg_optimizer import CurveOptimizer
+from neural_styles.svg_optim.generators import Generator, ScaledSvgGen, GroupGenerator
 from neural_styles.nn_utils.prepare_model import VGG16Layers, VGG19Layers, ResNet18Layers
 from tensorboardX import SummaryWriter
 
