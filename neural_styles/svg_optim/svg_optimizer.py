@@ -28,7 +28,7 @@ class CurveOptimizer(NamedTuple):
     scale: tuple = (0.5, 0.9)  # Use smaller number of large image, st resize is not too extreme
     n_augms: int = 1  # Should probably be proportional t the image size
 
-    def gen_and_optimize(self, writer=None, color_optimisation_activated=False):
+    def gen_and_optimize(self, writer=None, color_optimisation_activated=False, offset=0):
 
         # Thanks to Katherine Crowson for this.
         # In the CLIPDraw code used to generate examples, we don't normalize images
@@ -43,7 +43,7 @@ class CurveOptimizer(NamedTuple):
 
         max_width = 50
 
-        shapes, shape_groups = self.generator_func()  # self.setup_parameters(colors)
+        shapes, shape_groups = self.generator_func()
 
         # Just some diffvg setup
         scene_args = pydiffvg.RenderFunction.serialize_scene(
@@ -52,28 +52,7 @@ class CurveOptimizer(NamedTuple):
         img = render(self.canvas_width, self.canvas_height, 2, 2, 0, None, *scene_args)
         background_image = torch.ones(img.shape)
 
-        points_vars = []
-
-        for path in shapes:
-            path.points.requires_grad = True
-            points_vars.append(path.points)
-
-        color_vars = list()
-        for group in shape_groups:
-            if hasattr(group, "fill_color"):
-                if color_optimisation_activated:
-                    group.fill_color.requires_grad = True
-                color_vars.append(group.fill_color)
-            else:
-                if color_optimisation_activated:
-                    group.stroke_color.requires_grad = True
-                color_vars.append(group.stroke_color)
-
-        stroke_vars = list()
-        for path in shapes:
-            if color_optimisation_activated:
-                path.stroke_width.requires_grad = True
-            stroke_vars.append(path.stroke_width)
+        points_vars, color_vars, stroke_vars = self.def_vars(shapes, shape_groups, color_optimisation_activated)
 
         # Optimizers
         points_optim = torch.optim.Adam(points_vars, lr=1.0)
@@ -86,13 +65,13 @@ class CurveOptimizer(NamedTuple):
         stroke_optim = None
 
         # Run the main optimization loop
-        for t in range(self.num_iter):
+        for t in range(offset, self.num_iter + offset):
             # Anneal learning rate (makes videos look cleaner)
-            if t == int(self.num_iter * 0.5):
+            if (t - offset) == int(self.num_iter * 0.5):
                 print(f"Iter {t}")
                 for g in points_optim.param_groups:
                     g['lr'] *= 0.5
-            if t == int(self.num_iter * 0.75):
+            if (t - offset) == int(self.num_iter * 0.75):
                 print(f"Iter {t}")
                 for g in points_optim.param_groups:
                     g['lr'] *= 0.5
@@ -126,6 +105,32 @@ class CurveOptimizer(NamedTuple):
         writer.add_scalars("neuron_excitation", {"loss": loss}, t)
         writer.add_image('Rendering', img[0], t)
         return shapes, shape_groups
+
+    def def_vars(self, shapes, shape_groups, color_optimisation_activated):
+        points_vars = []
+
+        for path in shapes:
+            path.points.requires_grad = True
+            points_vars.append(path.points)
+
+        color_vars = list()
+        for group in shape_groups:
+            if hasattr(group, "fill_color"):
+                if color_optimisation_activated:
+                    group.fill_color.requires_grad = True
+                color_vars.append(group.fill_color)
+            else:
+                if color_optimisation_activated:
+                    group.stroke_color.requires_grad = True
+                color_vars.append(group.stroke_color)
+
+        stroke_vars = list()
+        for path in shapes:
+            if color_optimisation_activated:
+                path.stroke_width.requires_grad = True
+            stroke_vars.append(path.stroke_width)
+
+        return points_vars, color_vars, stroke_vars
 
     def gen_image_from_curves(self, t, shapes, shape_groups, gamma, background_image):
         render = pydiffvg.RenderFunction.apply
@@ -165,3 +170,32 @@ class CurveOptimizer(NamedTuple):
             img_augs.append(augment_trans(img))
         im_batch = torch.cat(img_augs)
         return im_batch
+
+
+class IncrementalCurveOptimizer(CurveOptimizer):
+
+    def def_vars(self, shapes, shape_groups, color_optimisation_activated):
+        points_vars = []
+
+        for path in shapes[-1:]:
+            path.points.requires_grad = True
+            points_vars.append(path.points)
+
+        color_vars = list()
+        for group in shape_groups[-1:]:
+            if hasattr(group, "fill_color"):
+                if color_optimisation_activated:
+                    group.fill_color.requires_grad = True
+                color_vars.append(group.fill_color)
+            else:
+                if color_optimisation_activated:
+                    group.stroke_color.requires_grad = True
+                color_vars.append(group.stroke_color)
+
+        stroke_vars = list()
+        for path in shapes[-1:]:
+            if color_optimisation_activated:
+                path.stroke_width.requires_grad = True
+            stroke_vars.append(path.stroke_width)
+
+        return points_vars, color_vars, stroke_vars
