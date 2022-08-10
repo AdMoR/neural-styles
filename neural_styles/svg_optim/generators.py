@@ -40,6 +40,7 @@ class Generator(NamedTuple):
                                                      fill_color=torch.tensor(self.stroke_color))
                 else:
                     path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]),
+                                                     fill_color=None,
                                                      stroke_color=torch.tensor(self.stroke_color))
                 shape_groups.append(path_group)
             return shapes, shape_groups
@@ -140,14 +141,17 @@ class GroupGenerator(NamedTuple):
         """
         from skimage.color import rgb2lab, lab2rgb
 
-        X = [rgb2lab(sg.stroke_color.detach().numpy()[:3]) for sg in shape_groups]
+        X = [sg.stroke_color.detach().numpy()[:3] for sg in shape_groups]
         W = [s.stroke_width.detach().numpy() for s in shapes]
 
         kmeans = KMeans(n_clusters=n_groups, random_state=0, max_iter=1000)
         kmeans.fit(X, sample_weight=W)
         predicted_kmeans = kmeans.predict(X, sample_weight=W)
 
-        new_colors = [lab2rgb(kmeans.cluster_centers_[i]) for i in predicted_kmeans]
+        #print(kmeans.cluster_centers_.shape)
+        new_colors = [kmeans.cluster_centers_[i, :] for i in predicted_kmeans]
+        #print(array[:3])
+        #new_colors = lab2rgb(array)
 
         new_sgs = [pydiffvg.ShapeGroup(shape_ids=sg.shape_ids, fill_color=None,
                                        stroke_color=torch.tensor((*new_colors[i], 1)))

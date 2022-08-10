@@ -17,7 +17,7 @@ from tensorboardX import SummaryWriter
 
 p = argparse.ArgumentParser()
 p.add_argument("--exc_layer_index", default=0, type=int)
-p.add_argument("--exc_layer_name", default=VGG16Layers.Conv5_3, type=VGG16Layers, choices=list(VGG16Layers))
+p.add_argument("--exc_layer_name", default=VGG16Layers.Conv4_3, type=VGG16Layers, choices=list(VGG16Layers))
 p.add_argument("--style_layer_name", default=VGG16Layers.Conv2_2, type=VGG16Layers, choices=list(VGG16Layers))
 #p.add_argument("--img_path", required=True, type=str)
 p.add_argument("--n_paths", default=200, type=int)

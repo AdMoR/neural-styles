@@ -97,7 +97,10 @@ class CurveOptimizer(NamedTuple):
             for path in shapes:
                 path.stroke_width.data.clamp_(1.0, max_width)
             for group in shape_groups:
-                group.fill_color.data.clamp_(0.0, 1.0)
+                if hasattr(group, "fill_color") and group.fill_color is not None:
+                    group.fill_color.data.clamp_(0.0, 1.0)
+                else:
+                    group.stroke_color.data.clamp(0.0, 1.0)
 
             if t % int(self.num_iter / 10) == 0 and writer is not None:
                 writer.add_scalars("neuron_excitation", {"loss": loss}, t)
@@ -115,7 +118,7 @@ class CurveOptimizer(NamedTuple):
 
         color_vars = list()
         for group in shape_groups:
-            if hasattr(group, "fill_color"):
+            if hasattr(group, "fill_color") and group.fill_color is not None:
                 if color_optimisation_activated:
                     group.fill_color.requires_grad = True
                 color_vars.append(group.fill_color)

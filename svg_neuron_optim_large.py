@@ -14,7 +14,7 @@ from tensorboardX import SummaryWriter
 
 p = argparse.ArgumentParser()
 p.add_argument("--layer_index", default=79, type=int)
-p.add_argument("--layer_name", default=VGG16Layers.Conv4_3, type=VGG16Layers,
+p.add_argument("--layer_name", default=VGG16Layers.Conv5_2, type=VGG16Layers,
                choices=list(VGG16Layers))
 p.add_argument("--n_paths", default=150, type=int)
 p.add_argument("--imsize", default=224, type=int)
@@ -22,7 +22,7 @@ p.add_argument("--n_steps", default=500, type=int)
 
 
 def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
-    upscale_x = 4
+    upscale_x = 3
     upscale_y = 3
 
     name = "result_" + "_".join(
@@ -33,11 +33,13 @@ def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
         return random.random(), random.random(), random.random()
 
     with SummaryWriter(log_dir=f"./logs/{name}", comment=name) as writer:
-        gen = GroupGenerator(n_paths_original, im_size_original, im_size_original,
-                             [(random_color(), 0.8, 1.0), (random_color(), 0.1, 1.0), (random_color(), 0.1, .0)])
+        #gen = GroupGenerator(n_paths_original, im_size_original, im_size_original,
+        #                     [(random_color(), 0.8, 1.0), (random_color(), 0.1, 1.0), (random_color(), 0.1, .0)])
+        gen = Generator(n_paths_original, im_size_original, im_size_original, allow_color=False, allow_alpha=False,
+                        fill_color=False)
         optimizer = CurveOptimizer(n_steps, im_size_original, im_size_original, gen.gen_func(),
                                    gen_vgg16_excitation_func(layer_name, layer_index), scale=(0.95, 1.05), n_augms=4)
-        shapes, shape_groups = optimizer.gen_and_optimize(writer, color_optimisation_activated=True)
+        shapes, shape_groups = optimizer.gen_and_optimize(writer, color_optimisation_activated=False)
         filename = "./" + name.replace(".", "_") + ".svg"
         pydiffvg.save_svg(filename, im_size_original, im_size_original, shapes, shape_groups)
 
@@ -56,7 +58,7 @@ def run(n_paths_original, im_size_original, n_steps, layer_name, layer_index):
         gen = GroupGenerator.from_existing(sha, sha_grp, 3)
         optimizer = CurveOptimizer(n_steps, im_size_y, im_size_x, gen,
                                    gen_vgg16_excitation_func(layer_name, layer_index),
-                                   scale=[0.95 * 1. / upscale_y, 1.05 * 1. / upscale_x], n_augms=8)
+                                   scale=[0.95 * 1. / upscale_y, 1.05 * 1. / upscale_x], n_augms=12)
         shapes, shape_groups = optimizer.gen_and_optimize(writer, color_optimisation_activated=False)
         filename_large = "./" + large_name.replace(".", "_") + ".svg"
         pydiffvg.save_svg(filename_large, im_size_y, im_size_x, shapes, shape_groups)
