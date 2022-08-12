@@ -54,7 +54,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
 
         self.init_tv = 0.001
         self.lambda_tv = self.init_tv
-        self.lambda_norm = 100
+        self.lambda_norm = 10
         self.batch_size = batch_size
 
     @property

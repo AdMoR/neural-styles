@@ -14,7 +14,7 @@ from tensorboardX import SummaryWriter
 
 p = argparse.ArgumentParser()
 p.add_argument("--layer_index", default=79, type=int)
-p.add_argument("--layer_name", default=VGG16Layers.Conv5_2, type=VGG16Layers,
+p.add_argument("--layer_name", default=VGG16Layers.Conv4_3, type=VGG16Layers,
                choices=list(VGG16Layers))
 p.add_argument("--n_paths", default=150, type=int)
 p.add_argument("--imsize", default=224, type=int)

@@ -20,11 +20,11 @@ def run_optim(image_size=500, layer_index=33, lr=0.005, n_steps=4096, batch=1):
 
     freq_img = build_freq_img(image_size, image_size, b=batch, ch=4)
 
-    model = prepare_model.load_vgg_16(prepare_model.VGG16Layers.Conv5_3, image_size)
+    model = prepare_model.load_vgg_16(prepare_model.VGG16Layers.Conv4_3, image_size)
     losses = [LayerExcitationLoss(neuron_index=layer_index, last_layer=False),
               ]#BatchDiversity(8)]
-    tfs = [partial(raw_crop, 16), partial(jitter, 4), scaled_rotation,
-           partial(jitter, 16), partial(pad, 16)]
+    tfs = [partial(raw_crop, 4), partial(jitter, 4), scaled_rotation,
+           partial(jitter, 4), partial(pad, 4)]
 
     opt = ParametrizedImageVisualizer(losses=losses, model=model, transforms=tfs, batch_size=4)
     opt.run(freq_img, lr=lr, n_steps=n_steps, image_size=image_size)
@@ -34,7 +34,7 @@ def run_optim(image_size=500, layer_index=33, lr=0.005, n_steps=4096, batch=1):
 
 
 if __name__ == "__main__":
-    for i in range(110, 1000):
+    for i in range(1, 256):
         run_optim(layer_index=i, n_steps=512, lr=0.008)
         print("Finished on channel {}".format(i))
     #for b in range(1, 10):
