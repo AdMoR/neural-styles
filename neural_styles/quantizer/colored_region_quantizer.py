@@ -1,5 +1,6 @@
 import pydiffvg
 import bezier
+import shapely
 from shapely.geometry import Polygon, Point, LineString
 from typing import NamedTuple, Tuple, List
 from shapely.validation import make_valid
@@ -10,9 +11,10 @@ from skimage.color import rgb2hsv, hsv2rgb, rgb2lab, lab2rgb
 import numpy as np
 from copy import deepcopy
 from shapely.geometry import MultiPolygon
+import argparse
 
 
-def my_render(shapes, shape_groups, size=500):
+def my_render(shapes, shape_groups, size=1024):
     render = pydiffvg.RenderFunction.apply
     scene_args = pydiffvg.RenderFunction.serialize_scene( \
         1 * size, 1 * size, shapes, shape_groups)
@@ -113,8 +115,8 @@ class Geometry(NamedTuple):
     def to_color_poly(cls, geoms):
         color_polys = list()
         for g in geoms:
-            for p in g.to_valid_polygons():
-                color_polys.append(ColorPoly(g.index, p, g.color))
+            for po in g.to_valid_polygons():
+                color_polys.append(ColorPoly(g.index, po, g.color))
         return color_polys
 
 
@@ -158,7 +160,13 @@ class ColorPoly(NamedTuple):
             # b - add the main shape minus intersections
             remaining = a
             for intersection in current_intersections:
-                remaining = remaining.difference(intersection.shape)
+                try:
+                    cleaned_shape = geom_cleaning(intersection.shape)
+                    remaining = remaining.difference(cleaned_shape)
+                    remaining = geom_cleaning(remaining)
+                except shapely.errors.TopologicalError as e:
+                    print(remaining, "<>", cleaned_shape)
+                    raise e
 
             try:
                 for element in remaining.geoms:
@@ -170,7 +178,7 @@ class ColorPoly(NamedTuple):
         return chunks
 
     @classmethod
-    def render(cls, color_polys, save_to_svg=False):
+    def render(cls, color_polys, canvas_width=500, canvas_height=500, save_to_svg=False):
         shapes, shape_groups = list(), list()
         index = 0
         for cp in color_polys:
@@ -187,7 +195,7 @@ class ColorPoly(NamedTuple):
         if not save_to_svg:
             my_render(shapes, shape_groups)
         else:
-            pydiffvg.save_svg("my_quantized_rez.svg", 500, 500, shapes, shape_groups)
+            pydiffvg.save_svg("my_quantized_rez__.svg", canvas_width, canvas_height, shapes, shape_groups)
 
     def serialize(self):
         poly_repr = self.shape.wkt
@@ -251,10 +259,10 @@ def layer_carving(chunks):
     return new_new_chunks
 
 
-def main():
-    path2 = "/home/amor/Documents/code_dw/neural-styles/deps/LIVE-Layerwise-Image-Vectorization/LIVE/log/166022352692_neural_style_test_128_2/output-svg/4-4-4-4-4-4-4-4-4-4-4-4-4-4-4-4-4-4-4-4-4-4-4-4.svg"
+def main(f_args, *args, **kwargs):
+    print(f_args)
 
-    svg = path2
+    svg = f_args.path
     canvas_width, canvas_height, shapes, shape_groups = \
         pydiffvg.svg_to_scene(svg)
     my_geometries = list()
@@ -272,7 +280,7 @@ def main():
         for c in chunks]
     W = [c.shape.area for c in chunks]
 
-    kmeans = KMeans(n_clusters=5, random_state=0, max_iter=1000)
+    kmeans = KMeans(n_clusters=f_args.n_colors, random_state=0, max_iter=1000)
     kmeans.fit(X, sample_weight=W)
     assigned_colors = kmeans.predict(X)
 
@@ -282,9 +290,16 @@ def main():
         enumerate(chunks)]
 
     final_chunks = layer_carving(new_chunks)
-    ColorPoly.serialize_collection(final_chunks, "serialized_rez.txt")
-    ColorPoly.render(final_chunks, save_to_svg=True)
+    ColorPoly.serialize_collection(final_chunks, f_args.file_name)
+    ColorPoly.render(final_chunks, canvas_width, canvas_height, save_to_svg=True)
+
+
+p = argparse.ArgumentParser()
+p.add_argument("--path", type=str)
+p.add_argument("--n_colors", default=6, type=int)
+p.add_argument("--file_name", default="serialized_rez.txt", type=str)
+args = p.parse_known_args()
 
 
 if __name__ == "__main__":
-    main()
+    main(*args)

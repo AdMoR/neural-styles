@@ -1,6 +1,7 @@
 from enum import Enum
 
 from torch import nn
+import torch
 from torchvision import models
 from neural_styles.image_utils.data_augmentation import build_subsampler
 from neural_styles.nn_utils.adapted_networks import StyleResNet18
@@ -147,3 +148,17 @@ def multi_layer_forward(selected_layers):
         nn_slices[last_layer] = nn_model
 
     return MultiInference(nn_slices)
+
+
+def dynamic_model_load(layer_name):
+    if layer_name in VGG16Layers:
+        name, _, nn_model = load_vgg_16(layer_name)
+    elif layer_name in VGG19Layers:
+        name, _, nn_model = load_vgg_19(layer_name)
+    elif layer_name in ResNet18Layers:
+        name, _, nn_model = load_resnet_18(layer_name)
+    else:
+        raise Exception("Invalid layer name")
+    nn_model = nn_model.to(torch.get_default_dtype())
+    nn_model.requires_grad = False
+    return name, nn_model

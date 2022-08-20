@@ -110,16 +110,16 @@ def _rfft2d_freqs(h, w):
   # when we have an odd input dimension we need to keep one additional
   # frequency and later cut off 1 pixel
   if w % 2 == 1:
-    fx = np.fft.fftfreq(w)[:w//2+2]
+    fx = np.fft.fftfreq(w)[:w + 1 + w % 2]
   else:
-    fx = np.fft.fftfreq(w)[:w//2+1]
+    fx = np.fft.fftfreq(w)[:w + 1]
   return np.sqrt(fx*fx + fy*fy)
 
 
 def build_freq_img(h, w, ch=3, b=2, sd=None, torch_var=True):
     freqs = _rfft2d_freqs(h, w)
     fh, fw = freqs.shape
-    sd = sd or 0.1
+    sd = sd or 0.001
     init_val = sd * np.random.randn(b, 2, ch, fh, fw).astype("float32")
 
     if torch_var:

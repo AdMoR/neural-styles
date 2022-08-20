@@ -10,24 +10,9 @@ try:
 except:
     import diffvg as pydiffvg
 
-from neural_styles.nn_utils.prepare_model import load_vgg_16, load_vgg_19, load_resnet_18, \
-    VGG16Layers, VGG19Layers, ResNet18Layers, multi_layer_forward
+from neural_styles.nn_utils.prepare_model import VGG16Layers, multi_layer_forward, dynamic_model_load
 from neural_styles.nn_utils.regularization_losses import TVLoss
 from neural_styles.nn_utils.style_losses import gram_matrix
-
-
-def dynamic_model_load(layer_name):
-    if layer_name in VGG16Layers:
-        name, _, nn_model = load_vgg_16(layer_name)
-    elif layer_name in VGG19Layers:
-        name, _, nn_model = load_vgg_19(layer_name)
-    elif layer_name in ResNet18Layers:
-        name, _, nn_model = load_resnet_18(layer_name)
-    else:
-        raise Exception("Invalid layer name")
-    nn_model = nn_model.to(pydiffvg.get_device(), torch.get_default_dtype())
-    nn_model.requires_grad = False
-    return name, nn_model
 
 
 def gen_vgg16_excitation_func(layer_name, layer_index):

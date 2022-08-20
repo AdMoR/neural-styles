@@ -49,10 +49,9 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         self.transforms = transforms
         # The normalizer normally needed for the optim should not be used
         # as it desaturates the final image
-        #self.normalizer = Normalization()
-        #self.transforms.insert(0, self.normalizer)
 
-        self.init_tv = 0.001
+        # Should be 1 for VGG16 and 0.01 for Resnet
+        self.init_tv = 0.01
         self.lambda_tv = self.init_tv
         self.lambda_norm = 10
         self.batch_size = batch_size
@@ -64,7 +63,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
 
     def forward(self, noise_image, debug=False, mask=None):
         # Get the right layer features
-        noise_image = self.subsampler(noise_image)
+        #noise_image = self.subsampler(noise_image)
         #noise_image = self.losses[0].prepare_rgb_img(noise_image)
         feature = self.feature_layer.forward(noise_image)
         loss = sum([loss(feature) for loss in self.losses])

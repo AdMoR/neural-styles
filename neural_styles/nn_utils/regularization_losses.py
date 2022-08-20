@@ -20,7 +20,7 @@ class TVLoss(nn.Module):
         else:
             raise Exception("Tot var tensor should be 3D or 4D")
         normalizer = B * C * H * W 
-        return tot_var / normalizer
+        return tot_var
 
 
 class ImageNorm(nn.Module):
