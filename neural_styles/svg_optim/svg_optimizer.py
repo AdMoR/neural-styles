@@ -27,6 +27,7 @@ class CurveOptimizer(NamedTuple):
 
     scale: tuple = (0.5, 0.9)  # Use smaller number of large image, st resize is not too extreme
     n_augms: int = 1  # Should probably be proportional t the image size
+    learning_rate: float = 1.0
 
     def gen_and_optimize(self, writer=None, color_optimisation_activated=False, offset=0):
 
@@ -55,10 +56,10 @@ class CurveOptimizer(NamedTuple):
         points_vars, color_vars, stroke_vars = self.def_vars(shapes, shape_groups, color_optimisation_activated)
 
         # Optimizers
-        points_optim = torch.optim.Adam(points_vars, lr=1.0)
+        points_optim = torch.optim.Adam(points_vars, lr=self.learning_rate)
 
         if color_optimisation_activated:
-            color_optim = torch.optim.Adam(color_vars, lr=0.1)
+            color_optim = torch.optim.Adam(color_vars, lr=self.learning_rate / 10)
             #stroke_optim = torch.optim.Adam(stroke_vars, lr=0.01)
         else:
             color_optim = None

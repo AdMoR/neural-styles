@@ -1,7 +1,8 @@
 import pydiffvg
 import bezier
+import copy
 import shapely
-from shapely.geometry import Polygon, Point, LineString
+from shapely.geometry import Polygon, Point, LineString, GeometryCollection, MultiLineString, MultiPolygon
 from typing import NamedTuple, Tuple, List
 from shapely.validation import make_valid
 import torch
@@ -9,8 +10,8 @@ from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from skimage.color import rgb2hsv, hsv2rgb, rgb2lab, lab2rgb
 import numpy as np
+from rtree import index
 from copy import deepcopy
-from shapely.geometry import MultiPolygon
 import argparse
 
 
@@ -124,6 +125,7 @@ class ColorPoly(NamedTuple):
     index: int
     shape: Polygon
     color: Tuple[int, int, int, int]
+    depth: int = 0
 
     @classmethod
     def from_collection_file(cls, file_path):
@@ -132,6 +134,16 @@ class ColorPoly(NamedTuple):
             for line in f:
                 chunks.append(cls(*line.strip().split(";")))
         return chunks
+
+    @classmethod
+    def from_diffvg(cls, shapes, shape_groups):
+        array = list()
+        for s, sg in zip(shapes, shape_groups):
+            pts = s.points.numpy().tolist()
+            polys = geom_cleaning(make_valid(Polygon(pts + [pts[0]])))
+            for p in unroll_poly(polys):
+                array.append(cls(sg.shape_ids, p, sg.fill_color))
+        return array
 
     @classmethod
     def to_chunks(cls, color_polygons):
@@ -178,6 +190,102 @@ class ColorPoly(NamedTuple):
         return chunks
 
     @classmethod
+    def to_chunks_v2(cls, my_color_polys, max_depth=10):
+        debug_index = -1
+        done_index = set()
+
+        def shape_update(poly, new_shape):
+            if new_shape.area < 0.5:
+                new_shape = Polygon()
+            else:
+                new_shape = geom_cleaning(new_shape)
+            return cls(poly.index, new_shape, poly.color, poly.depth)
+
+        my_chunks = deepcopy(my_color_polys)
+        priority_queue = sorted(list(range(len(my_color_polys))), key=lambda i: my_color_polys[i].index)
+        iter_ = 0
+        print("total_blocks : ", len(my_chunks))
+
+        while len(priority_queue) > 0:
+            iter_ += 1
+            # print("Queue size : ", len(priority_queue))
+            i = priority_queue.pop()
+            a = my_chunks[i].shape
+            current_intersections = list()
+            if my_chunks[i].depth > max_depth:  # first order intersection only
+                continue
+            if a.is_empty:
+                continue
+            # if my_chunks[i].color[3] < 0.01: # Layer is transparent
+            #    continue
+
+            if debug_index == my_chunks[i].index.numpy():
+                print(f"i is {debug_index} : ", my_chunks[i].shape.area)
+
+            current_intersections = list()
+            for j in range(len(my_chunks)):
+                if i == j:
+                    continue
+                if debug_index == my_chunks[j].index.numpy()[0]:
+                    print(f"j is {debug_index} : ", my_chunks[j].shape.area)
+                if (i, j) in done_index or (j, i) in done_index:  # Intersection already processed
+                    continue
+                if j in done_index:  # Higher up layer should been 100% done
+                    continue
+                if a.is_empty:
+                    break
+                cp = my_chunks[j]
+                if cp.shape.is_empty:
+                    continue
+                # if my_chunks[j].color[3] < 0.01:
+                #    continue
+                try:
+                    intersection = a.intersection(cp.shape)
+                except Exception as e:
+                    print("---> ", i, " ", j, " : ", my_chunks[i].shape, " ", my_chunks[j].shape)
+                    raise e
+                if intersection.is_empty or intersection.area < 0.5:
+                    continue
+                else:
+                    if debug_index == my_chunks[j].index.numpy()[0]:
+                        print(f"j intersection  is {debug_index} : ", intersection.area)
+                        print(my_chunks[i].shape)
+                        print(my_chunks[j].shape)
+                    if debug_index == my_chunks[i].index.numpy()[0]:
+                        print(f"i intersection  is {debug_index} : ", intersection.area)
+                        print(my_chunks[i].shape)
+                        print(my_chunks[j].shape)
+                        print("\n")
+
+                    current_intersections.append(intersection)
+                    # print(" ", intersection.area, " ----> ", intersection)
+                    # Remove intersection from secondary poly
+                    my_chunks[j] = shape_update(my_chunks[j], my_chunks[j].shape.difference(my_chunks[i].shape))
+                    # Add intersection as a new chunk
+                    new_index = len(my_chunks)
+                    blend = alpha_color_over(my_chunks[i].color, my_chunks[j].color)
+                    my_chunks.append(cls(my_chunks[i].index, geom_cleaning(intersection),
+                                         blend, my_chunks[i].depth + 1))
+                    # This intersection will be the next items processed after the end of this loop
+                    priority_queue.append(new_index)
+                    done_index.add((new_index, j))
+
+            # Remove intersection from main poly
+            if len(current_intersections) > 0:
+                global_intersection = current_intersections[0]
+                for intersection in current_intersections[1:]:
+                    global_intersection = global_intersection.union(intersection)
+                shape_minus_intersection = my_chunks[i].shape.difference(global_intersection)
+                if debug_index == my_chunks[i].index.numpy()[0]:
+                    print(f"global intersection of {i} : {global_intersection.wkt} \n\n")
+                    print(f"remains of {i} : {shape_minus_intersection.wkt} \n\n")
+                    print(f"final : {shape_update(my_chunks[i], shape_minus_intersection).shape.wkt}")
+                my_chunks[i] = shape_update(my_chunks[i], shape_minus_intersection)
+            done_index.add(i)
+
+        return my_chunks
+
+    @classmethod
     def render(cls, color_polys, canvas_width=500, canvas_height=500, save_to_svg=False):
         shapes, shape_groups = list(), list()
         index = 0
@@ -209,30 +317,37 @@ class ColorPoly(NamedTuple):
                 f.write(p.serialize() + "\n")
 
 
-def is_valid(poly):
-    c1 = poly.area > 100
-    c2 = (max(poly.bounds) > 0) and (min(poly.bounds) < 499)
-    return all([c1, c2])
-
-
 def unroll_poly(s):
     polygons = list()
     try:
         for element in s.geoms:
-            if element.is_empty or type(element) in [LineString, Point]:
+            if element.is_empty or type(element) in [LineString, Point, MultiLineString] or element.area < 1.0:
                 continue
             polygons.extend(unroll_poly(element))
     except AttributeError:
-        polygons.append(s)
+        simplified = s.buffer(-0.1).buffer(0.1)
+        if type(simplified) in [MultiPolygon, GeometryCollection]:
+            polygons.extend(unroll_poly(simplified))
+        else:
+            polygons.append(simplified)
     return polygons
 
 
 def geom_cleaning(shape):
-    if type(shape) in [Point, LineString]:
+    if type(shape) in [Point, LineString, MultiLineString] or shape.area < 1:
         return Polygon()
-    valid_shape = make_valid(shape)
-    shapes = unroll_poly(valid_shape)
-    return MultiPolygon(shapes)
+    if type(shape) == GeometryCollection:
+        polys = list(filter(lambda x: type(x) in [Polygon, MultiPolygon] and x.area > 0.5, shape.geoms))
+        return GeometryCollection(polys)
+    if not shape.is_valid:
+        shape = make_valid(shape)
+    shapes = list(filter(lambda x: type(x) == Polygon and x.area > 0.5, unroll_poly(shape)))
+    if len(shapes) > 1:
+        return MultiPolygon(shapes)
+    elif len(shapes) == 0:
+        return Polygon()
+    else:
+        return shapes[0]
 
 
 def layer_carving(chunks):
@@ -259,37 +374,72 @@ def layer_carving(chunks):
     return new_new_chunks
 
 
+def layer_carving_v2(new_chunks):
+    elements = sorted(copy.deepcopy(new_chunks), key=lambda x: x.index.numpy()[0])
+
+    my_index = index.Index()
+    for i, e in enumerate(elements):
+        if e.shape.is_empty:
+            continue
+        my_index.insert(e.index.numpy()[0], e.shape.bounds)
+
+    for i in reversed(range(len(elements))):
+        if elements[i].shape.is_empty:
+            continue
+        for j in my_index.intersection(elements[i].shape.bounds):
+            if i == j:
+                continue
+            if elements[j].index < elements[i].index:
+                current_shape = elements[j].shape
+                elements[j] = ColorPoly(elements[j].index,
+                                        geom_cleaning(elements[j].shape.difference(elements[i].shape)),
+                                        elements[j].color)
+
+    new_new_chunks = list()
+    for chunk in elements:
+        new_polys = unroll_poly(chunk.shape)
+        new_new_chunks.extend([ColorPoly(chunk.index, s, chunk.color) for s in new_polys])
+
+    return new_new_chunks
+
+
 def main(f_args, *args, **kwargs):
     print(f_args)
 
     svg = f_args.path
     canvas_width, canvas_height, shapes, shape_groups = \
         pydiffvg.svg_to_scene(svg)
-    my_geometries = list()
 
-    for i, (s, sg) in enumerate(zip(shapes, shape_groups)):
-        geo = Geometry.from_diffvg(s, sg)
-        my_geometries.append(geo)
+    if type(shapes[0]) == pydiffvg.Path:
+        my_geometries = list()
 
-    color_polygons = Geometry.to_color_poly(my_geometries)
+        for i, (s, sg) in enumerate(zip(shapes, shape_groups)):
+            geo = Geometry.from_diffvg(s, sg)
+            my_geometries.append(geo)
+        color_polygons = Geometry.to_color_poly(my_geometries)
+    else:
+        color_polygons = ColorPoly.from_diffvg(shapes, shape_groups)
 
-    chunks = ColorPoly.to_chunks(color_polygons)
+    chunks = ColorPoly.to_chunks_v2(color_polygons)
 
-    X = [rgb2lab(
-        c.color.numpy()[:3] * c.color.numpy()[3] + (0.8 * np.array([1.0, 1.0, 1.0]) * (1.0 - c.color.numpy()[3])))
-        for c in chunks]
-    W = [c.shape.area for c in chunks]
+    if bool(f_args.quantize):
+        X = [rgb2lab(
+            c.color.numpy()[:3] * c.color.numpy()[3] + (0.8 * np.array([1.0, 1.0, 1.0]) * (1.0 - c.color.numpy()[3])))
+            for c in chunks]
+        W = [c.shape.area for c in chunks]
 
-    kmeans = KMeans(n_clusters=f_args.n_colors, random_state=0, max_iter=1000)
-    kmeans.fit(X, sample_weight=W)
-    assigned_colors = kmeans.predict(X)
+        kmeans = KMeans(n_clusters=f_args.n_colors, random_state=0, max_iter=1000)
+        kmeans.fit(X, sample_weight=W)
+        assigned_colors = kmeans.predict(X)
 
-    new_chunks = [ColorPoly(
-        c.index, c.shape,
-        torch.tensor((*lab2rgb(kmeans.cluster_centers_[assigned_colors[i]]).tolist(), 1.0))) for i, c in
-        enumerate(chunks)]
+        new_chunks = [ColorPoly(
+            c.index, c.shape,
+            torch.tensor((*lab2rgb(kmeans.cluster_centers_[assigned_colors[i]]).tolist(), 1.0))) for i, c in
+            enumerate(chunks)]
+    else:
+        new_chunks = chunks
 
-    final_chunks = layer_carving(new_chunks)
+    final_chunks = layer_carving_v2(new_chunks)
     ColorPoly.serialize_collection(final_chunks, f_args.file_name)
     ColorPoly.render(final_chunks, canvas_width, canvas_height, save_to_svg=True)
 
@@ -298,6 +448,7 @@ p = argparse.ArgumentParser()
 p.add_argument("--path", type=str)
 p.add_argument("--n_colors", default=6, type=int)
 p.add_argument("--file_name", default="serialized_rez.txt", type=str)
+p.add_argument("--quantize", default=1, type=int)
 args = p.parse_known_args()
 
 

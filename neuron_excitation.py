@@ -21,7 +21,7 @@ def run_optim(image_size=500, layer_index=33, lr=0.0001, n_steps=2500, batch=1):
 
     freq_img = build_freq_img(image_size, image_size, b=batch, ch=3)
 
-    name, model = prepare_model.dynamic_model_load(prepare_model.ResNet18Layers.Block3)
+    name, model = prepare_model.dynamic_model_load(prepare_model.ResNet18Layers.Block2)
     model = (name, build_subsampler(224), model)
     losses = [LayerExcitationLoss(neuron_index=layer_index, last_layer=False), ]
     tfs = [torchvision.transforms.RandomCrop((224, 224)),

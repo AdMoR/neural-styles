@@ -149,21 +149,25 @@ class ExtremeSpikeLayerLoss(nn.Module):
 
 
 def load_imagenet_labels():
-    classes_url = "https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/master/data/imagenet_classes.txt"
-    synsets_url = "https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/master/data/imagenet_synsets.txt"
+    synets_path = "./imagenet_synsets.txt"
+    classes_path = "./imagenet_classes.txt"
 
-    for url in [classes_url, synsets_url]:
-        urllib.request.urlretrieve(url, "./{}".format(os.path.basename(url)))
+    if not os.path.exists(classes_path) or not os.path.exists(classes_path):
+        classes_url = "https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/master/data/imagenet_classes.txt"
+        synsets_url = "https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/master/data/imagenet_synsets.txt"
+
+        for url in [classes_url, synsets_url]:
+            urllib.request.urlretrieve(url, "./{}".format(os.path.basename(url)))
 
 
     synset_to_class = dict()
-    with open("./imagenet_synsets.txt") as synsets_file:
+    with open(synets_path) as synsets_file:
         for line in synsets_file:
             tokens = line.strip().split(" ")
             synset_to_class[tokens[0]] = " ".join(tokens[1:])
 
     index_to_synsets = dict()
-    with open("./imagenet_classes.txt") as class_file:
+    with open(classes_path) as class_file:
         for i, line in enumerate(class_file):
             synset = line.strip()
             index_to_synsets[i] = synset
