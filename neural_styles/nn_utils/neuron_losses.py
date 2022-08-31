@@ -69,6 +69,9 @@ class LayerExcitationLoss(nn.Module):
         if len(layer.shape) == 4:
             B, C, H, W = layer.shape
             noise_activation = layer[:, self.neuron_index, :, :]
+        elif len(layer.shape) == 3:  # vit encoder case
+            B, H, C = layer.shape
+            noise_activation = layer[:, :, self.neuron_index]
         else:
             B, C = layer.shape
             noise_activation = layer[:, self.neuron_index]

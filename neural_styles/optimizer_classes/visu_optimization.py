@@ -38,7 +38,7 @@ def show_result(img, t, loss, image_features, nouns_features):
 
 class ParametrizedImageVisualizer(torch.nn.Module):
 
-    def __init__(self, model, losses, transforms=[], batch_size=4):
+    def __init__(self, model, losses, transforms=[], batch_size=4, init_tv=0.01):
         super(ParametrizedImageVisualizer, self).__init__()
         self.model_name, self.subsampler, self.feature_layer = model
 
@@ -51,7 +51,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
         # as it desaturates the final image
 
         # Should be 1 for VGG16 and 0.01 for Resnet
-        self.init_tv = 0.01
+        self.init_tv = init_tv
         self.lambda_tv = self.init_tv
         self.lambda_norm = 10
         self.batch_size = batch_size
@@ -104,7 +104,7 @@ class ParametrizedImageVisualizer(torch.nn.Module):
                     viz = vutils.make_grid(noise)
                     viz = torch.clamp(viz, 0, 0.999999)
                     if writer:
-                        writer.add_image('visu/' + self.name, viz, i)
+                        writer.add_image('visu_' + self.name, viz, i)
                 loss.backward()
                 return loss
             return closure
