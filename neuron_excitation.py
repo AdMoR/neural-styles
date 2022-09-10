@@ -17,19 +17,21 @@ else:
     torch.set_default_tensor_type('torch.FloatTensor')
 
 
-def run_optim(image_size=500, layer_index=33, lr=0.0001, n_steps=2500, batch=1):
+def run_optim(image_size=2048, layer_index=33, lr=0.00001, n_steps=6003, batch=1, init_tv=0.01):
 
     freq_img = build_freq_img(image_size, image_size, b=batch, ch=3)
 
-    name, model = prepare_model.dynamic_model_load(prepare_model.ResNet18Layers.Block2)
-    model = (name, build_subsampler(224), model)
+    #name, model = prepare_model.dynamic_model_load(prepare_model.ResNet18Layers.Block2)
+    name, model = prepare_model.dynamic_model_load(prepare_model.NSFWResNet18Layers.Block4)
+    model = (name + f"_lr={lr}", build_subsampler(224), model)
     losses = [LayerExcitationLoss(neuron_index=layer_index, last_layer=False), ]
-    tfs = [torchvision.transforms.RandomCrop((224, 224)),
+    tfs = [torchvision.transforms.RandomPerspective(distortion_scale=0.25, p=0.8),
+           torchvision.transforms.RandomResizedCrop((224, 224), scale=(0.0, 1.0)),
            scaled_rotation,
-           partial(jitter, 8),
-           partial(pad, 8)]
+           partial(jitter, 16),
+           partial(pad, 16)]
 
-    opt = ParametrizedImageVisualizer(losses=losses, model=model, transforms=tfs, batch_size=4)
+    opt = ParametrizedImageVisualizer(losses=losses, model=model, transforms=tfs, batch_size=8, init_tv=init_tv)
     opt.run(freq_img, lr=lr, n_steps=n_steps, image_size=image_size)
 
     simple_save(freq_to_rgb(freq_img, image_size, image_size),
@@ -37,6 +39,6 @@ def run_optim(image_size=500, layer_index=33, lr=0.0001, n_steps=2500, batch=1):
 
 
 if __name__ == "__main__":
-    for i in range(1, 256):
-        run_optim(layer_index=i)
+    for i in range(21, 256):
+        run_optim(layer_index=i, init_tv=8.0e-3, lr=2e-5)
         print("Finished on channel {}".format(i))

@@ -4,9 +4,9 @@ import torch
 import torchvision.utils as vutils
 from tensorboardX import SummaryWriter
 
-from neural_styles.nn_utils import TVLoss, ImageNorm
-from neural_styles.image_utils import freq_to_rgb
-from neural_styles.image_utils import Normalization
+from neural_styles.nn_utils.regularization_losses import TVLoss, ImageNorm
+from neural_styles.image_utils.decorelation import freq_to_rgb
+from neural_styles.image_utils.normalisation import Normalization
 
 
 class StyleImageVisualizer(torch.nn.Module):
@@ -20,7 +20,6 @@ class StyleImageVisualizer(torch.nn.Module):
         self.losses = losses
         self.normalizer = Normalization()
         self.transforms = transforms
-
 
         self.init_tv = 0.00001
         self.lambda_tv = self.init_tv

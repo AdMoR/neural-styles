@@ -25,7 +25,8 @@ class CurveOptimizer(NamedTuple):
     generator_func: Callable
     forward_model_func: Callable
 
-    scale: tuple = (0.5, 0.9)  # Use smaller number of large image, st resize is not too extreme
+    scale: tuple = (0.01, 0.99)  # Use smaller number of large image, st resize is not too extreme
+
     n_augms: int = 1  # Should probably be proportional t the image size
     learning_rate: float = 1.0
 
@@ -159,14 +160,14 @@ class CurveOptimizer(NamedTuple):
     def data_augment(self, img, NUM_AUGS, use_normalized_clip=True):
         # Image Augmentation Transformation
         augment_trans = transforms.Compose([
-            transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
-            transforms.RandomResizedCrop(224, scale=self.scale),
+            transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.3),
+            transforms.RandomResizedCrop(224, scale=self.scale, ratio=(0.9, 1.1)),
         ])
 
         if use_normalized_clip:
             augment_trans = transforms.Compose([
-                transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5),
-                transforms.RandomResizedCrop(224, scale=self.scale),
+                transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.3),
+                transforms.RandomResizedCrop(224, scale=self.scale, ratio=(0.9, 1.1)),
                 transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
             ])
         img_augs = []

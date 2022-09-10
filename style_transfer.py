@@ -4,14 +4,14 @@ import torch
 from torchvision import transforms
 from functools import partial
 
-from image_utils.data_augmentation import jitter, image_scaling, scaled_rotation
-from image_utils.decorelation import build_freq_img, freq_to_rgb
-from image_utils.data_loading import save_optim, simple_save, load_image, create_gif
-from nn_utils import prepare_model
-from nn_utils.neuron_losses import LayerExcitationLoss
-from nn_utils.style_losses import StyleLoss, ContentLoss
-from nn_utils.regularization_losses import BatchDiversity
-from optimizer_classes.neural_style_optimizer import StyleImageVisualizer
+from neural_styles.image_utils.data_augmentation import jitter, image_scaling, scaled_rotation
+from neural_styles.image_utils.decorelation import build_freq_img, freq_to_rgb
+from neural_styles.image_utils.data_loading import save_optim, simple_save, load_image, create_gif
+from neural_styles.nn_utils import prepare_model
+from neural_styles.nn_utils.neuron_losses import LayerExcitationLoss
+from neural_styles.nn_utils.style_losses import StyleLoss, ContentLoss
+from neural_styles.nn_utils.regularization_losses import BatchDiversity
+from neural_styles.optimizer_classes.neural_style_optimizer import StyleImageVisualizer
 
 
 if torch.cuda.is_available():
@@ -21,8 +21,8 @@ else:
 
 
 def run_optim(content_path, sys_path, image_size=500, lr=0.005, n_steps=4096):
-    style_img = load_image(style_path)
-    content_img = load_image(content_path)
+    style_img = load_image(style_path, size=(image_size, image_size))
+    content_img = load_image(content_path, size=(image_size, image_size))
 
     model = prepare_model.load_style_resnet_18([0, 1, 2, 3, 4, 5], image_size)
     losses = [StyleLoss(i, 10 ** 8, content=True) for i in range(2, 4)] + \
