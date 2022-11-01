@@ -35,6 +35,7 @@ class VGG16Layers(Enum):
     Conv5_1 = 24
     Conv5_2 = 26
     Conv5_3 = 28
+    D3 = -1
 
     def __repr__(self):
         return str(self)
@@ -128,8 +129,12 @@ def load_style_resnet_18(layers, image_size=500):
 
 def load_vgg_16(layer_name, image_size=500, *args):
     vgg = models.vgg16(pretrained=True).eval()
-    modules = list(vgg.children())
-    replace_relu_with_leaky(modules, ramp=0.1)
+    modules = list(vgg.modules())
+    # Replace relu in conv feature
+    replace_relu_with_leaky(modules[1], ramp=0.1)
+    # replace relu in dense features
+    replace_relu_with_leaky(modules[34], ramp=0.1)
+    vgg = modules[0]
 
     max_layer = -1
     if layer_name not in list(VGG16Layers):
@@ -138,7 +143,7 @@ def load_vgg_16(layer_name, image_size=500, *args):
         max_layer = layer_name.value
     nn_model = nn.Sequential(vgg.features[0:max_layer])
 
-    if layer_name == -1:
+    if layer_name == VGG16Layers.D3:
         return "vgg16_{}".format("classes"), build_subsampler(image_size), vgg
     else:
         return "vgg16_{}".format(layer_name), build_subsampler(image_size), nn_model

@@ -26,7 +26,8 @@ def gen_vgg16_excitation_func(layer_name, layer_index):
     nn_model.to(device)
 
     def func(img_batch, *args, **kwargs):
-        feature = nn_model.forward(img_batch)[:, layer_index, :, :]
+        layer_tensor = nn_model.forward(img_batch)
+        feature = layer_tensor[:, layer_index, :, :] if len(layer_tensor.shape) == 4 else layer_tensor[:, layer_index]
         return -torch.sum(feature) + 0.00001 * tvloss(img_batch)
 
     return func
