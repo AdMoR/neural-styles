@@ -17,6 +17,7 @@ class Generator(NamedTuple):
     allow_alpha: bool = False
     stroke_width: int = 1.0
     fill_color: bool = False
+    line_radius: float = 0.4
 
     @property
     def stroke_color(self):
@@ -33,7 +34,7 @@ class Generator(NamedTuple):
             for i in range(self.num_paths):
                 num_segments = random.randint(1, 3)
                 path = build_random_path(num_segments, self.canvas_width, self.canvas_height,
-                                         stroke_width=self.stroke_width)
+                                         stroke_width=self.stroke_width, radius=self.line_radius)
                 shapes.append(path)
                 if self.fill_color:
                     path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]),
