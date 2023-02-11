@@ -10,6 +10,8 @@ pip install torch-tools
 pip install visdom
 pip install scikit-image
 pip install moviepy
+pip install tensorboardX
+pip install transformers
 
 git clone https://github.com/BachiLi/diffvg
 cd diffvg
