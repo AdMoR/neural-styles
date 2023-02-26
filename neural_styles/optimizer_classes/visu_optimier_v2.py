@@ -29,12 +29,13 @@ class NeuronVisualizer(NamedTuple):
     def gen(self, folder="./", multiplier=1.):
 
         if torch.cuda.is_available():
+            print("Cuda")
             torch.set_default_tensor_type('torch.cuda.FloatTensor')
         else:
             torch.set_default_tensor_type('torch.FloatTensor')
 
         obj_fn = self.objective.build_fn()
-        reg_fn = self.reg_function.build_fn()
+        reg_fn = self.reg_function.build_fn() if self.reg_function is not None else None
 
         optim = torch.optim.Adam(self.generator.parameters(), lr=self.lr)
         tfs = [lambda x: jitter(8, x), transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5), ]
@@ -44,8 +45,7 @@ class NeuronVisualizer(NamedTuple):
         for i in range(self.n_steps):
             out = self.generator.generate()
 
-            jitters = [tf_pipeline(out[0].unsqueeze(0))
-                       for _ in range(repeat)]
+            jitters = [tf_pipeline(out[0].unsqueeze(0)) for _ in range(repeat)]
             jittered_batch = torch.cat(
                 jitters,
                 dim=0
@@ -65,9 +65,9 @@ class NeuronVisualizer(NamedTuple):
             loss.backward()
             optim.step()
 
-        pickle.dump(self.generator, open(
-            f"{folder}/gen={self.generator.name}_model_ln={self.objective.layer_name}_li={self.objective.layer_index}.pkl",
-            "wb"))
+        #pickle.dump(self.generator, open(
+        #    f"{folder}/gen={self.generator.name}_model_ln={self.objective.layer_name}_li={self.objective.layer_index}.pkl",
+        #    "wb"))
         torchvision.utils.save_image(out,
                                      f"{folder}/gen={self.generator.name}_ln={self.objective.layer_name}_li={self.objective.layer_index}.jpg")
 

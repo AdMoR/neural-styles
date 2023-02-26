@@ -1,3 +1,4 @@
+import torch
 from neural_styles.image_utils.decorelation import build_freq_img, freq_to_rgb
 
 

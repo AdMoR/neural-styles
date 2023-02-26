@@ -34,10 +34,15 @@ class ClipImageTextMatching(NamedTuple):
             'hf-hub:laion/CLIP-convnext_large_d_320.laion2B-s29B-b131K-ft')
         tokenizer = open_clip.get_tokenizer('hf-hub:laion/CLIP-convnext_large_d_320.laion2B-s29B-b131K-ft')
         text = tokenizer(self.prompt)
+        if torch.cuda.is_available():
+            model = model.eval().cuda()
+        else:
+            model = model.eval()
+        with torch.no_grad():
+            text_features = model.encode_text(text).detach()
 
         def clip_fn(img):
             image_features = model.encode_image(img)
-            text_features = model.encode_text(text)
             return -self.lambda_reg * torch.nn.functional.cosine_similarity(image_features, text_features)
 
         return clip_fn
