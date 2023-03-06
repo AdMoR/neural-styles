@@ -41,13 +41,16 @@ class ClipImageTextMatching(NamedTuple):
 
     def build_fn(self):
         import open_clip
+        from neural_styles.nn_utils.relu_override import replace_relu_with_leaky, recursive_relu_replace
 
         if self.model is None:
             model, preprocess_train, preprocess_val = open_clip.create_model_and_transforms(
-                'hf-hub:laion/CLIP-convnext_large_d_320.laion2B-s29B-b131K-ft')
+                'RN50', 'openai')
         else:
             model = self.model
-        tokenizer = open_clip.get_tokenizer('hf-hub:laion/CLIP-convnext_large_d_320.laion2B-s29B-b131K-ft')
+        children = list(model.named_children())
+        vision_model = torch.nn.Sequential(*recursive_relu_replace(list(children[0][1].children())))
+        tokenizer = open_clip.get_tokenizer('RN50')
         text = tokenizer(self.prompt)
         if torch.cuda.is_available():
             model = model.eval().cuda()
@@ -57,7 +60,7 @@ class ClipImageTextMatching(NamedTuple):
             text_features = model.encode_text(text).detach()
 
         def clip_fn(img):
-            image_features = model.encode_image(img)
+            image_features = vision_model.forward(img)
             return -self.lambda_reg * torch.nn.functional.cosine_similarity(image_features, text_features)
 
         return clip_fn
@@ -76,15 +79,15 @@ class DualMirrorLoss(NamedTuple):
     def build_fn(self):
         import open_clip
         model, preprocess_train, preprocess_val = open_clip.create_model_and_transforms(
-            'hf-hub:laion/CLIP-convnext_large_d_320.laion2B-s29B-b131K-ft')
+            'RN50', 'openai')
         obj_1_fn = ClipImageTextMatching(self.prompt_1, model=model).build_fn()
         obj_2_fn = ClipImageTextMatching(self.prompt_2, model=model).build_fn()
         lambda_reg = self.dual_reg
         lambda_sim = self.similar_reg
 
         def fn(batch):
-            from torchvision.transforms.functional import hflip
-            flipped_batch = hflip(batch)
+            from torchvision.transforms.functional import vflip
+            flipped_batch = vflip(batch)
             part_1 = obj_1_fn(batch) - lambda_reg * obj_2_fn(batch)
             part_2 = obj_2_fn(flipped_batch) - lambda_reg * obj_1_fn(flipped_batch)
             return -(part_1 + part_2) + lambda_sim * torch.abs(part_2 - part_1)

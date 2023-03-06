@@ -11,13 +11,13 @@ else:
     torch.set_default_tensor_type('torch.FloatTensor')
 
 
-gen = FourierGenerator(sd=0.00001)
-obj = DualMirrorLoss("A volcano", "A triangle", 0.01)
+gen = FourierGenerator(size=224, sd=0.00001)
+obj = DualMirrorLoss("A volcano", "Cats", 0.01, 0.01)
 reg = None #ClipImageTextMatching(lambda_reg=100.0)
 #reg = None
 
 print(gen, obj, reg)
 
-optimizer = NeuronVisualizer(gen, obj, reg, n_augment=4, lr=0.0001)
+optimizer = NeuronVisualizer(gen, obj, reg, n_steps=10000, n_augment=4, lr=0.0001)
 
 optimizer.gen('./')
