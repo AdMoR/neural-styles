@@ -25,6 +25,7 @@ class NeuronVisualizer(NamedTuple):
     reg_function: Any = None
     n_steps: int = 1000
     lr: float = 0.001
+    n_augment: int = 8
 
     def gen(self, folder="./", multiplier=1.):
 
@@ -40,12 +41,11 @@ class NeuronVisualizer(NamedTuple):
         optim = torch.optim.Adam(self.generator.parameters(), lr=self.lr)
         tfs = [lambda x: jitter(8, x), transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.5), ]
         tf_pipeline = compose(*tfs)
-        repeat = 4
 
         for i in range(self.n_steps):
             out = self.generator.generate()
 
-            jitters = [tf_pipeline(out[0].unsqueeze(0)) for _ in range(repeat)]
+            jitters = [tf_pipeline(out[0].unsqueeze(0)) for _ in range(self.n_augment)]
             jittered_batch = torch.cat(
                 jitters,
                 dim=0
@@ -68,7 +68,13 @@ class NeuronVisualizer(NamedTuple):
         #pickle.dump(self.generator, open(
         #    f"{folder}/gen={self.generator.name}_model_ln={self.objective.layer_name}_li={self.objective.layer_index}.pkl",
         #    "wb"))
-        torchvision.utils.save_image(out,
-                                     f"{folder}/gen={self.generator.name}_ln={self.objective.layer_name}_li={self.objective.layer_index}.jpg")
+        torchvision.utils.save_image(
+            out, f"{folder}/{self.name}.jpg"
+        )
 
         return self.generator, out
+
+    @property
+    def name(self):
+        return f"gen={self.generator.name}_ln={self.objective.layer_name}_li={self.objective.layer_index}_" \
+               f"lr={self.lr}_a={self.n_augment}" + "_" + self.reg_function.name if self.reg_function else ""

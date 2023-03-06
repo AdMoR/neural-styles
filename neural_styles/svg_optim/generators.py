@@ -9,6 +9,11 @@ from typing import NamedTuple, Any, List, Callable, Dict, Tuple
 from neural_styles.svg_optim.path_helpers import build_random_path, build_translated_path, build_random_polys
 
 
+pydiffvg.set_use_gpu(torch.cuda.is_available())
+device = pydiffvg.get_device()
+pydiffvg.set_device(device)
+
+
 class Generator(NamedTuple):
     num_paths: int
     canvas_width: int

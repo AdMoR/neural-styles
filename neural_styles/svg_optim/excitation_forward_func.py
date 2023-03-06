@@ -23,6 +23,7 @@ def gen_vgg16_excitation_func(layer_name, layer_index):
         device = torch.device('cpu')
     else:
         device = torch.device('cuda')
+        nn_model = nn_model.cuda()
     nn_model.to(device)
 
     def func(img_batch, *args, **kwargs):
