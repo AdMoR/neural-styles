@@ -21,61 +21,9 @@ warnings.filterwarnings("ignore")
 from neural_styles.svg_optim.live_utils import *
 from neural_styles.optimizer_classes.objective_functions import XingReg, ChannelObjective
 
-import yaml
-from easydict import EasyDict as edict
-
 
 pydiffvg.set_print_timing(False)
 gamma = 1.0
-
-if False:
-    if torch.cuda.is_available():
-        torch.set_default_tensor_type('torch.cuda.FloatTensor')
-    else:
-        torch.set_default_tensor_type('torch.FloatTensor')
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--debug', action='store_true', default=False)
-    parser.add_argument("--config", type=str)
-    parser.add_argument("--experiment", type=str)
-    parser.add_argument("--seed", type=int)
-    parser.add_argument("--target", type=str, help="target image path")
-    parser.add_argument('--log_dir', metavar='DIR', default="log/debug")
-    parser.add_argument('--initial', type=str, default="random", choices=['random', 'circle'])
-    parser.add_argument('--signature', nargs='+', type=str)
-    parser.add_argument('--seginit', nargs='+', type=str)
-    parser.add_argument("--num_segments", type=int, default=4)
-    # parser.add_argument("--num_paths", type=str, default="1,1,1")
-    # parser.add_argument("--num_iter", type=int, default=500)
-    # parser.add_argument('--free', action='store_true')
-    # Please ensure that image resolution is divisible by pool_size; otherwise the performance would drop a lot.
-    # parser.add_argument('--pool_size', type=int, default=40, help="the pooled image size for next path initialization")
-    # parser.add_argument('--save_loss', action='store_true')
-    # parser.add_argument('--save_init', action='store_true')
-    # parser.add_argument('--save_image', action='store_true')
-    # parser.add_argument('--save_video', action='store_true')
-    # parser.add_argument('--print_weight', action='store_true')
-    # parser.add_argument('--circle_init_radius',  type=float)
-    cfg = edict()
-    args = parser.parse_args()
-    cfg.debug = args.debug
-    cfg.config = args.config
-    cfg.experiment = args.experiment
-    cfg.seed = args.seed
-    cfg.target = args.target
-    cfg.log_dir = args.log_dir
-    cfg.initial = args.initial
-    cfg.signature = args.signature
-    # set cfg num_segments in command
-    cfg.num_segments = args.num_segments
-    if args.seginit is not None:
-        cfg.seginit = edict()
-        cfg.seginit.type = args.seginit[0]
-        if cfg.seginit.type == 'circle':
-            cfg.seginit.radius = float(args.seginit[1])
-    return cfg
 
 
 class PathSchedule(NamedTuple):
@@ -95,7 +43,7 @@ class LRSchedule(NamedTuple):
 
 class Config(NamedTuple):
     coord_init: str = "biased"
-    num_iter: int = 1000
+    num_iter: int = 20
     num_segments: int = 10
     num: int = 10
     lr_base: float = 1.0
@@ -104,6 +52,10 @@ class Config(NamedTuple):
     path_schedule: PathSchedule = PathSchedule()
     lr_schedule = LRSchedule()
     seed: int = 42
+
+    @property
+    def name(self):
+        return "_".join(map(str, [self.coord_init, self.num_iter, self.num_segments, self.lr_base]))
 
 
 def pos_init_fn(config, h, w):
@@ -145,7 +97,6 @@ def def_vars(shapes, shape_groups, color_optimisation_activated):
 pydiffvg.set_use_gpu(torch.cuda.is_available())
 device = pydiffvg.get_device()
 pydiffvg.set_device(device)
-print(">>>> ", device)
 
 
 if __name__ == "__main__":
@@ -174,7 +125,7 @@ if __name__ == "__main__":
     para_bg = torch.tensor([1., 1., 1.], requires_grad=False).cuda()
 
     loss_fn = ChannelObjective().build_fn()
-    reg_fn = None #XingReg().build_fn()
+    reg_fn = None
 
     ##################
     # start_training #
@@ -182,7 +133,6 @@ if __name__ == "__main__":
 
     loss_weight = None
     loss_weight_keep = 0
-    print(config.coord_init)
     pos_init_method = pos_init_fn(config, h, w)
 
     lrlambda_f = linear_decay_lrlambda_f(config.num_iter, 0.4)
@@ -203,11 +153,8 @@ if __name__ == "__main__":
         shapes_record += shapes
         shape_groups_record += shape_groups
 
-        #pg = [{'params': para[ki], 'lr': config.lr_schedule.point, 'initial_lr': config.lr_base}
-        #      for ki in sorted(para.keys())]
-        print(shapes[0].__dict__, shape_groups[0].__dict__)
         a, b, c = def_vars(shapes, shape_groups, False)
-        optim = torch.optim.Adam(a, lr=1.0)
+        optim = torch.optim.Adam(a, lr=config.lr_base)
         scheduler = ReduceLROnPlateau(optim)
         optim_schedular_dict[path_idx] = (optim, scheduler)
 
@@ -241,5 +188,7 @@ if __name__ == "__main__":
                     group.fill_color.data.clamp_(0.0, 1.0)
 
         pos_init_method = pos_init_fn(config, h, w)
+
+    pydiffvg.save_svg(config.name + ".svg", w, h, shapes_record, shape_groups_record)
 
     print("The last loss is: {}".format(loss.item()))

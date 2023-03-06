@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from typing import NamedTuple, Any
 
 import torch
 
@@ -9,6 +9,10 @@ from neural_styles.nn_utils import prepare_model
 class ChannelObjective(NamedTuple):
     layer_name: VGG16Layers = VGG16Layers.Conv4_3
     layer_index: int = 0
+
+    @property
+    def name(self):
+        return f"channel_ln={self.layer_name}_li={self.layer_index}"
 
     def build_fn(self):
         name, loss_nn = prepare_model.dynamic_model_load(self.layer_name)
@@ -29,6 +33,7 @@ class ChannelObjective(NamedTuple):
 class ClipImageTextMatching(NamedTuple):
     prompt: str = "A beautiful artwork, colorful, trending"
     lambda_reg: float = 0.01
+    model: Any = None
 
     @property
     def name(self):
@@ -37,8 +42,11 @@ class ClipImageTextMatching(NamedTuple):
     def build_fn(self):
         import open_clip
 
-        model, preprocess_train, preprocess_val = open_clip.create_model_and_transforms(
-            'hf-hub:laion/CLIP-convnext_large_d_320.laion2B-s29B-b131K-ft')
+        if self.model is None:
+            model, preprocess_train, preprocess_val = open_clip.create_model_and_transforms(
+                'hf-hub:laion/CLIP-convnext_large_d_320.laion2B-s29B-b131K-ft')
+        else:
+            model = self.model
         tokenizer = open_clip.get_tokenizer('hf-hub:laion/CLIP-convnext_large_d_320.laion2B-s29B-b131K-ft')
         text = tokenizer(self.prompt)
         if torch.cuda.is_available():
@@ -53,6 +61,35 @@ class ClipImageTextMatching(NamedTuple):
             return -self.lambda_reg * torch.nn.functional.cosine_similarity(image_features, text_features)
 
         return clip_fn
+
+
+class DualMirrorLoss(NamedTuple):
+    prompt_1: str
+    prompt_2: str
+    dual_reg: float = 0.3
+    similar_reg: float = 0.1
+
+    @property
+    def name(self):
+        return f"mirror_gen_{self.prompt_1.replace(' ', '_')}_{self.prompt_2.replace(' ', '_')}"
+
+    def build_fn(self):
+        import open_clip
+        model, preprocess_train, preprocess_val = open_clip.create_model_and_transforms(
+            'hf-hub:laion/CLIP-convnext_large_d_320.laion2B-s29B-b131K-ft')
+        obj_1_fn = ClipImageTextMatching(self.prompt_1, model=model).build_fn()
+        obj_2_fn = ClipImageTextMatching(self.prompt_2, model=model).build_fn()
+        lambda_reg = self.dual_reg
+        lambda_sim = self.similar_reg
+
+        def fn(batch):
+            from torchvision.transforms.functional import hflip
+            flipped_batch = hflip(batch)
+            part_1 = obj_1_fn(batch) - lambda_reg * obj_2_fn(batch)
+            part_2 = obj_2_fn(flipped_batch) - lambda_reg * obj_1_fn(flipped_batch)
+            return -(part_1 + part_2) + lambda_sim * torch.abs(part_2 - part_1)
+
+        return fn
 
 
 class XingReg(NamedTuple):

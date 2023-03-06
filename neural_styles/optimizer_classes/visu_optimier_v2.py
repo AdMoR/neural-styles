@@ -68,13 +68,14 @@ class NeuronVisualizer(NamedTuple):
         #pickle.dump(self.generator, open(
         #    f"{folder}/gen={self.generator.name}_model_ln={self.objective.layer_name}_li={self.objective.layer_index}.pkl",
         #    "wb"))
+        print(f"{folder}/{self.name.replace('.', '')}.jpg")
         torchvision.utils.save_image(
-            out, f"{folder}/{self.name}.jpg"
+            out, f"{folder}/{self.name.replace('.', '')}.jpg"
         )
 
         return self.generator, out
 
     @property
     def name(self):
-        return f"gen={self.generator.name}_ln={self.objective.layer_name}_li={self.objective.layer_index}_" \
-               f"lr={self.lr}_a={self.n_augment}" + "_" + self.reg_function.name if self.reg_function else ""
+        return f"gen={self.generator.name}_ln={self.objective.name}_" \
+               f"lr={self.lr}_a={self.n_augment}" + ("_" + self.reg_function.name if self.reg_function else "")
