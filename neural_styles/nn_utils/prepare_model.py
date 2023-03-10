@@ -15,13 +15,13 @@ class VGG19Layers(Enum):
     Conv1_2 = 3
     Conv2_2 = 8
     Conv3_3 = 14
-    Conv3_4 = 16
-    Conv4_3 = 23
-    Conv4_4 = 25
-    Conv5_1 = 28
-    Conv5_2 = 30
-    Conv5_3 = 32
-    Conv5_4 = 34
+    Conv3_4 = 17
+    Conv4_3 = 24
+    Conv4_4 = 26
+    Conv5_1 = 29
+    Conv5_2 = 31
+    Conv5_3 = 33
+    Conv5_4 = 35
 
     def __repr__(self):
         return str(self)
@@ -30,11 +30,12 @@ class VGG19Layers(Enum):
 class VGG16Layers(Enum):
     Conv1_2 = 3
     Conv2_2 = 8
-    Conv3_3 = 14
-    Conv4_3 = 21
-    Conv5_1 = 24
-    Conv5_2 = 26
-    Conv5_3 = 28
+    Conv3_3 = 15
+    Conv4_2 = 20
+    Conv4_3 = 22
+    Conv5_1 = 25
+    Conv5_2 = 27
+    Conv5_3 = 29
     D3 = -1
 
     def __repr__(self):
