@@ -35,7 +35,7 @@ class CurveOptimizer(NamedTuple):
         # Thanks to Katherine Crowson for this.
         # In the CLIPDraw code used to generate examples, we don't normalize images
         # before passing into CLIP, but really you should. Turn this to True to do that.
-        use_normalized_clip = True
+        use_normalized_clip = False
         pydiffvg.set_print_timing(False)
         gamma = 1.0
 
@@ -139,7 +139,7 @@ class CurveOptimizer(NamedTuple):
 
     def gen_image_from_curves(self, t, shapes, shape_groups, gamma, background_image):
         render = pydiffvg.RenderFunction.apply
-        scene_args = pydiffvg.RenderFunction.serialize_scene( \
+        scene_args = pydiffvg.RenderFunction.serialize_scene(
             self.canvas_width, self.canvas_height, shapes, shape_groups)
         img = render(self.canvas_width, self.canvas_height, 2, 2, t, background_image, *scene_args)
         img = img[:, :, 3:4] * img[:, :, :3] + torch.ones(img.shape[0], img.shape[1], 3,
@@ -157,17 +157,19 @@ class CurveOptimizer(NamedTuple):
         img = img.permute(0, 3, 1, 2)
         return img
 
-    def data_augment(self, img, NUM_AUGS, use_normalized_clip=True):
+    def data_augment(self, img, NUM_AUGS, use_normalized_clip=False):
         # Image Augmentation Transformation
         augment_trans = transforms.Compose([
+            transforms.RandomAffine(degrees=(-5, 5), translate=(0.05, 0.05),),
             transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.3),
-            transforms.RandomResizedCrop(224, scale=self.scale, ratio=(0.9, 1.1)),
+            transforms.RandomCrop(224),
         ])
 
         if use_normalized_clip:
             augment_trans = transforms.Compose([
+                transforms.RandomAffine(degrees=(-5, 5), translate=(0.05, 0.05), ),
                 transforms.RandomPerspective(fill=0, p=1, distortion_scale=0.3),
-                transforms.RandomResizedCrop(224, scale=self.scale, ratio=(0.9, 1.1)),
+                transforms.RandomResizedCrop(224),
                 transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
             ])
         img_augs = []

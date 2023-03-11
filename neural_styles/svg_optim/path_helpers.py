@@ -29,7 +29,7 @@ def build_random_path_bis(num_segments, canvas_width, canvas_height, stroke_widt
     return path
 
 
-def build_random_path(num_segments, canvas_width, canvas_height, stroke_width=1.0, radius=0.2) -> pydiffvg.Path:
+def build_random_path(num_segments, canvas_width, canvas_height, stroke_width=1.0, radius=0.1) -> pydiffvg.Path:
     num_control_points = torch.zeros(num_segments, dtype=torch.int32) + 2
     points = []
     p0 = (random.random(), random.random())

@@ -22,7 +22,7 @@ class Generator(NamedTuple):
     allow_alpha: bool = False
     stroke_width: int = 1.0
     fill_color: bool = False
-    line_radius: float = 0.4
+    line_radius: float = 0.1
 
     @property
     def stroke_color(self):
